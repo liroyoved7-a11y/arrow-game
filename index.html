@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
     <style>
-        body { margin: 0; overflow: hidden; background: #FF5733; font-family: 'Arial', sans-serif; touch-action: none; }
+        body { margin: 0; overflow: hidden; background: #FF5733; font-family: 'Arial', sans-serif; touch-action: none; transition: background 0.5s; }
         #player { position: absolute; left: 100px; font-size: 50px; transform: rotate(90deg); transition: transform 0.1s; }
         .obstacle { position: absolute; background: red; height: 10px; border-radius: 5px; }
         #score { position: absolute; top: 20px; left: 20px; font-size: 30px; color: white; }
@@ -20,6 +20,15 @@
     <div id="player">➤</div>
 
     <script>
+        // רשימת צבעים לרקע
+        const colors = ['#FF5733', '#33FF57', '#3357FF', '#F333FF', '#FF33A8', '#33FFF3'];
+        let colorIndex = 0;
+
+        function changeBackgroundColor() {
+            colorIndex = (colorIndex + 1) % colors.length;
+            document.body.style.background = colors[colorIndex];
+        }
+
         document.addEventListener('contextmenu', event => event.preventDefault());
 
         const jumpSound = new Audio('https://actions.google.com/sounds/v1/ui/click.ogg');
@@ -30,6 +39,7 @@
         const scoreDisplay = document.getElementById('score');
         
         let y = 300, velocity = 0, gameStarted = false, isGameOver = false, score = 0;
+        let lastColorScore = 0;
         let obstacles = [];
         let gameSpeed = 5;
         const gravity = 0.3, jumpStrength = -6;
@@ -78,6 +88,12 @@
             y += velocity;
             player.style.top = y + 'px';
 
+            // החלפת צבע כל 25 נקודות
+            if (score > 0 && score % 25 === 0 && score !== lastColorScore) {
+                changeBackgroundColor();
+                lastColorScore = score;
+            }
+
             gameSpeed = score >= 50 ? 10 : (score >= 10 ? 7.5 : 5);
 
             obstacles.forEach((obs, index) => {
@@ -106,6 +122,7 @@
 
         function gameOver() {
             isGameOver = true;
+            changeBackgroundColor(); // מחליף צבע כשמתים
             msg.style.display = 'block';
             msg.innerHTML = "GAME OVER!<br>הניקוד שלך: " + score + "<br><span style='font-size:20px'>לחץ או גע במסך כדי לנסות שוב</span>";
         }
