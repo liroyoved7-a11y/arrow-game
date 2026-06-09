@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { margin: 0; overflow: hidden; background: #87CEEB; font-family: 'Arial', sans-serif; }
+        #player { position: absolute; left: 100px; font-size: 50px; transform: rotate(90deg); transition: transform 0.1s; }
+        .obstacle { position: absolute; background: red; height: 10px; border-radius: 5px; }
+        #score { position: absolute; top: 20px; left: 20px; font-size: 30px; color: white; }
+        #msg { position: absolute; top: 40%; width: 100%; text-align: center; font-size: 50px; color: white; font-weight: bold; cursor: pointer; text-shadow: 2px 2px 4px #000; }
+    </style>
+</head>
+<body>
+    <div id="score">Score: 0</div>
+    <div id="msg">לחץ על קליק שמאלי כדי להתחיל!</div>
+    <div id="player">➤</div>
+
+    <script>
+        document.addEventListener('contextmenu', event => event.preventDefault());
+
+        // שימוש בלינק ישיר וברור לסאונד קצר
+        const jumpSound = new Audio('https://actions.google.com/sounds/v1/ui/click.ogg');
+        jumpSound.load(); // טעינה מוקדמת
+
+        const player = document.getElementById('player');
+        const msg = document.getElementById('msg');
+        const scoreDisplay = document.getElementById('score');
+        
+        let y = 300, velocity = 0, gameStarted = false, isGameOver = false, score = 0;
+        let obstacles = [];
+        let gameSpeed = 5;
+        const gravity = 0.3, jumpStrength = -6;
+
+        window.addEventListener('mousedown', (event) => {
+            if (event.button !== 0) return;
+
+            if (isGameOver) {
+                location.reload();
+            } else if (!gameStarted) {
+                gameStarted = true;
+                msg.style.display = 'none';
+                
+                // ניסיון ראשוני להפעיל סאונד כדי "לפתוח" אותו בדפדפן
+                jumpSound.play().catch(() => {});
+                gameLoop();
+            } else {
+                velocity = jumpStrength;
+                // השמעת סאונד
+                jumpSound.currentTime = 0;
+                jumpSound.play().catch(() => {});
+            }
+        });
+
+        function createObstacle() {
+            if (!gameStarted || isGameOver) return;
+            const obs = document.createElement('div');
+            obs.className = 'obstacle';
+            obs.style.width = '100px';
+            obs.style.top = (Math.random() * (window.innerHeight - 50)) + 'px';
+            obs.style.left = window.innerWidth + 'px';
+            document.body.appendChild(obs);
+            obstacles.push(obs);
+        }
+
+        setInterval(createObstacle, 1500);
+
+        function gameLoop() {
+            if (!gameStarted || isGameOver) return;
+
+            velocity += gravity;
+            y += velocity;
+            player.style.top = y + 'px';
+
+            if (score >= 50) {
+                gameSpeed = 10;
+            } else if (score >= 10) {
+                gameSpeed = 7.5;
+            } else {
+                gameSpeed = 5;
+            }
+
+            obstacles.forEach((obs, index) => {
+                let obsLeft = parseInt(obs.style.left);
+                obs.style.left = (obsLeft - gameSpeed) + 'px';
+
+                let pRect = player.getBoundingClientRect();
+                let oRect = obs.getBoundingClientRect();
+
+                if (pRect.left < oRect.right && pRect.right > oRect.left &&
+                    pRect.top < oRect.bottom && pRect.bottom > oRect.top) {
+                    gameOver();
+                }
+
+                if (obsLeft < -100) {
+                    obs.remove();
+                    obstacles.splice(index, 1);
+                    score++;
+                    scoreDisplay.innerText = "Score: " + score;
+                }
+            });
+
+            if (y > window.innerHeight || y < 0) gameOver();
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameOver() {
+            isGameOver = true;
+            msg.style.display = 'block';
+            msg.innerHTML = "GAME OVER!<br>הניקוד שלך: " + score + "<br><span style='font-size:20px'>לחץ על קליק שמאלי כדי לנסות שוב</span>";
+        }
+    </script>
+</body>
+</html>
