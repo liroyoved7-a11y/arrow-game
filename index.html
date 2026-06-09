@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <title>משחק החץ המאתגר - Arrow Flyer Game</title>
-    <meta name="description" content="שחקו עכשיו במשחק החץ הממכר! עופו למעלה, הימנעו מהמכשולים והגיעו לניקוד הכי גבוה. משחק דפדפן מהיר ופשוט.">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
     <style>
-        body { margin: 0; overflow: hidden; background: #FF5733; font-family: 'Arial', sans-serif; touch-action: none; transition: background 0.5s; }
+        /* הגדרנו כאן את הצבע הירוק בתור הצבע ההתחלתי */
+        body { margin: 0; overflow: hidden; background: #33FF57; font-family: 'Arial', sans-serif; touch-action: none; transition: background 0.5s; }
         #player { position: absolute; left: 100px; font-size: 50px; transform: rotate(90deg); transition: transform 0.1s; }
         .obstacle { position: absolute; background: red; height: 10px; border-radius: 5px; }
         #score { position: absolute; top: 20px; left: 20px; font-size: 30px; color: white; }
@@ -20,8 +20,8 @@
     <div id="player">➤</div>
 
     <script>
-        // רשימת צבעים לרקע
-        const colors = ['#FF5733', '#33FF57', '#3357FF', '#F333FF', '#FF33A8', '#33FFF3'];
+        // שמנו את הירוק בהתחלה, ואת הכתום מיד אחריו
+        const colors = ['#33FF57', '#FF5733', '#3357FF', '#F333FF', '#FF33A8', '#33FFF3'];
         let colorIndex = 0;
 
         function changeBackgroundColor() {
@@ -50,6 +50,8 @@
             } else if (!gameStarted) {
                 gameStarted = true;
                 msg.style.display = 'none';
+                // מחליפים לירוק מיד כשמתחילים
+                document.body.style.background = colors[0];
                 jumpSound.play().catch(() => {});
                 gameLoop();
             } else {
@@ -88,7 +90,6 @@
             y += velocity;
             player.style.top = y + 'px';
 
-            // החלפת צבע כל 25 נקודות
             if (score > 0 && score % 25 === 0 && score !== lastColorScore) {
                 changeBackgroundColor();
                 lastColorScore = score;
@@ -122,7 +123,7 @@
 
         function gameOver() {
             isGameOver = true;
-            changeBackgroundColor(); // מחליף צבע כשמתים
+            changeBackgroundColor(); 
             msg.style.display = 'block';
             msg.innerHTML = "GAME OVER!<br>הניקוד שלך: " + score + "<br><span style='font-size:20px'>לחץ או גע במסך כדי לנסות שוב</span>";
         }
