@@ -1,7 +1,11 @@
 <!DOCTYPE html>
-<html>
+<html lang="he">
 <head>
     <meta charset="UTF-8">
+    <title>משחק החץ המאתגר - Arrow Flyer Game</title>
+    <meta name="description" content="שחקו עכשיו במשחק החץ הממכר! עופו למעלה, הימנעו מהמכשולים והגיעו לניקוד הכי גבוה. משחק דפדפן מהיר ופשוט.">
+    <meta name="keywords" content="משחק חץ, משחק דפדפן, משחק אונליין, Arrow Game, משחק קפיצות">
+    
     <style>
         body { margin: 0; overflow: hidden; background: #87CEEB; font-family: 'Arial', sans-serif; }
         #player { position: absolute; left: 100px; font-size: 50px; transform: rotate(90deg); transition: transform 0.1s; }
@@ -18,9 +22,8 @@
     <script>
         document.addEventListener('contextmenu', event => event.preventDefault());
 
-        // שימוש בלינק ישיר וברור לסאונד קצר
         const jumpSound = new Audio('https://actions.google.com/sounds/v1/ui/click.ogg');
-        jumpSound.load(); // טעינה מוקדמת
+        jumpSound.load();
 
         const player = document.getElementById('player');
         const msg = document.getElementById('msg');
@@ -39,13 +42,10 @@
             } else if (!gameStarted) {
                 gameStarted = true;
                 msg.style.display = 'none';
-                
-                // ניסיון ראשוני להפעיל סאונד כדי "לפתוח" אותו בדפדפן
                 jumpSound.play().catch(() => {});
                 gameLoop();
             } else {
                 velocity = jumpStrength;
-                // השמעת סאונד
                 jumpSound.currentTime = 0;
                 jumpSound.play().catch(() => {});
             }
