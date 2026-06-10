@@ -5,6 +5,7 @@
     <title>משחק החץ המאתגר - Arrow Flyer Game</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
+    <!-- Statcounter Code -->
     <script type="text/javascript">
         var sc_project=13288355; 
         var sc_invisible=1; 
@@ -19,14 +20,12 @@
         #score { position: absolute; top: 20px; left: 20px; font-size: 30px; color: white; }
         #msg { position: absolute; top: 40%; width: 100%; text-align: center; font-size: 40px; color: white; font-weight: bold; cursor: pointer; text-shadow: 2px 2px 4px #000; padding: 20px; }
         
-        /* עיצוב כפתור ה-AP */
-        #ap-btn { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.5); color: white; padding: 5px 10px; cursor: pointer; border-radius: 5px; z-index: 100; }
+        #ap-btn { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.5); color: white; padding: 5px 10px; cursor: pointer; border-radius: 5px; z-index: 100; font-size: 20px;}
         
-        /* עיצוב המודלים (חלונות קופצים) */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; color: white; }
-        .panel { background: #333; padding: 20px; border-radius: 10px; text-align: center; }
-        input { padding: 10px; font-size: 18px; width: 150px; }
-        button { padding: 10px 20px; font-size: 18px; cursor: pointer; background: #33FF57; border: none; margin-top: 10px; }
+        .panel { background: #222; padding: 20px; border-radius: 10px; text-align: center; width: 300px;}
+        input { padding: 8px; font-size: 16px; width: 80px; margin-bottom: 10px;}
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: #33FF57; border: none; margin: 5px; border-radius: 5px;}
     </style>
 </head>
 <body>
@@ -38,7 +37,7 @@
     <div id="password-modal" class="modal">
         <div class="panel">
             <h2>הזן סיסמה</h2>
-            <input type="password" id="passInput" placeholder="סיסמה">
+            <input type="password" id="passInput">
             <br><button onclick="checkPassword()">אישור</button>
         </div>
     </div>
@@ -48,7 +47,11 @@
             <h2>פאנל ניהול</h2>
             Score: <input type="number" id="scoreInput"><br>
             Speed: <input type="number" id="speedInput"><br>
+            Gravity: <input type="number" id="gravityInput" step="0.1"><br>
+            <label><input type="checkbox" id="godModeToggle"> God Mode</label><br>
+            <label><input type="checkbox" id="darkModeToggle"> Dark Mode</label><br>
             <button onclick="applySettings()">החל שינויים</button>
+            <button onclick="resetGame()" style="background:#ff4444;">Reset Game</button>
             <button onclick="closeAdmin()">סגור</button>
         </div>
     </div>
@@ -57,7 +60,15 @@
         const colors = ['#33FF57', '#FF5733', '#3357FF', '#F333FF', '#FF33A8', '#33FFF3'];
         let colorIndex = 0;
         let isPaused = false;
-        let adminSpeed = 0; // אם 0, משתמש במהירות האוטומטית
+        let isGodMode = false;
+
+        // משתני משחק
+        let y = 300, velocity = 0, gameStarted = false, isGameOver = false, score = 0;
+        let lastColorScore = 0;
+        let obstacles = [];
+        let gameSpeed = 5;
+        let gravity = 0.3;
+        const jumpStrength = -6;
 
         function changeBackgroundColor() {
             colorIndex = (colorIndex + 1) % colors.length;
@@ -69,12 +80,6 @@
         const msg = document.getElementById('msg');
         const scoreDisplay = document.getElementById('score');
         
-        let y = 300, velocity = 0, gameStarted = false, isGameOver = false, score = 0;
-        let lastColorScore = 0;
-        let obstacles = [];
-        let gameSpeed = 5;
-        const gravity = 0.3, jumpStrength = -6;
-
         function handleInput() {
             if (isGameOver) location.reload();
             else if (!gameStarted) {
@@ -89,7 +94,7 @@
         window.addEventListener('mousedown', handleInput);
         window.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(); }, { passive: false });
 
-        // לוגיקה של הפאנל
+        // פונקציות פאנל
         function openPasswordModal() { isPaused = true; document.getElementById('password-modal').style.display = 'flex'; }
         
         function checkPassword() {
@@ -98,20 +103,24 @@
                 document.getElementById('admin-panel').style.display = 'flex';
                 document.getElementById('scoreInput').value = score;
                 document.getElementById('speedInput').value = gameSpeed;
+                document.getElementById('gravityInput').value = gravity;
             } else { alert("סיסמה שגויה!"); }
         }
 
         function applySettings() {
             score = parseInt(document.getElementById('scoreInput').value);
-            adminSpeed = parseInt(document.getElementById('speedInput').value);
-            gameSpeed = adminSpeed;
+            gameSpeed = parseInt(document.getElementById('speedInput').value);
+            gravity = parseFloat(document.getElementById('gravityInput').value);
+            isGodMode = document.getElementById('godModeToggle').checked;
+            
+            if(document.getElementById('darkModeToggle').checked) document.body.style.background = "#222";
+            else document.body.style.background = colors[colorIndex];
+            
             scoreDisplay.innerText = "Score: " + score;
         }
 
-        function closeAdmin() { 
-            document.getElementById('admin-panel').style.display = 'none'; 
-            isPaused = false; 
-        }
+        function resetGame() { location.reload(); }
+        function closeAdmin() { document.getElementById('admin-panel').style.display = 'none'; isPaused = false; }
 
         function gameLoop() {
             if (!gameStarted || isGameOver || isPaused) { requestAnimationFrame(gameLoop); return; }
@@ -125,15 +134,16 @@
                 lastColorScore = score;
             }
 
-            if (adminSpeed === 0) gameSpeed = score >= 50 ? 10 : (score >= 10 ? 7.5 : 5);
-
             obstacles.forEach((obs, index) => {
                 let obsLeft = parseInt(obs.style.left);
                 obs.style.left = (obsLeft - gameSpeed) + 'px';
-                if (player.getBoundingClientRect().left < obs.getBoundingClientRect().right && 
+                
+                // בדיקת התנגשות (אלא אם God Mode פעיל)
+                if (!isGodMode && player.getBoundingClientRect().left < obs.getBoundingClientRect().right && 
                     player.getBoundingClientRect().right > obs.getBoundingClientRect().left &&
                     player.getBoundingClientRect().top < obs.getBoundingClientRect().bottom && 
                     player.getBoundingClientRect().bottom > obs.getBoundingClientRect().top) gameOver();
+                
                 if (obsLeft < -100) { obs.remove(); obstacles.splice(index, 1); score++; scoreDisplay.innerText = "Score: " + score; }
             });
 
