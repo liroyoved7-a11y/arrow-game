@@ -77,7 +77,7 @@
 
         // --- 2. משתני משחק ---
         let score = 0, y = 300, velocity = 0, gameStarted = false, isGameOver = false, gameSpeed = 5, isGodMode = false;
-        let isPaused = false; // משתנה חדש למצב השהיה
+        let isPaused = false; 
         let obstacles = [];
         let bestScore = localStorage.getItem('bestScore') || 0;
         const player = document.getElementById('player');
@@ -90,7 +90,7 @@
 
         // --- 3. לוגיקה ניהול ---
         function openPasswordModal() { 
-            isPaused = true; // עוצר את המשחק
+            isPaused = true; 
             document.getElementById('password-modal').style.display = 'flex'; 
         }
         
@@ -112,7 +112,7 @@
         }
 
         function closeModals() { 
-            isPaused = false; // מחזיר את המשחק
+            isPaused = false; 
             document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); 
         }
 
@@ -157,16 +157,28 @@
         }
 
         function handleJump(e) {
-            if(isGameOver || isPaused) return; // לא קופץ אם המשחק מושהה
+            // שכבת הגנה קשיחה: אם מושהה או נגמר, אל תעשה כלום
+            if(isGameOver || isPaused) return; 
+            
             gameStarted = true; 
             velocity = -6; 
         }
 
-        gameContainer.addEventListener('touchstart', handleJump, {passive: false});
-        window.addEventListener('mousedown', handleJump);
+        // מאזיני אירועים
+        gameContainer.addEventListener('touchstart', (e) => {
+             // אם מושהה, תפסיק מיד (מונע גרירת אירועים)
+            if(isPaused) return;
+            handleJump(e);
+        }, {passive: false});
+
+        window.addEventListener('mousedown', (e) => {
+            // אם מושהה, תפסיק מיד
+            if(isPaused) return;
+            handleJump(e);
+        });
 
         function gameLoop() {
-            // הוספנו כאן את isPaused לתנאי העצירה
+            // אם מושהה - המשחק נעצר לגמרי
             if (!gameStarted || isGameOver || isPaused) { 
                 requestAnimationFrame(gameLoop); 
                 return; 
@@ -186,7 +198,7 @@
         }
 
         setInterval(() => {
-            if (gameStarted && !isGameOver && !isPaused) { // גם ה-setInterval יבדוק אם מושהה
+            if (gameStarted && !isGameOver && !isPaused) { 
                 const obs = document.createElement('div');
                 obs.className = 'obstacle';
                 obs.style.top = (Math.random() * (window.innerHeight - 50)) + 'px';
