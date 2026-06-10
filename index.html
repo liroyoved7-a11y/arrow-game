@@ -2,7 +2,7 @@
 <html lang="he">
 <head>
     <meta charset="UTF-8">
-    <title>משחק החץ המאתגר - Arrow Flyer Game</title>
+    <title>Arrow Game</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
     <script type="text/javascript">
@@ -16,36 +16,35 @@
         body { margin: 0; overflow: hidden; background: #33FF57; font-family: 'Arial', sans-serif; touch-action: none; transition: background 0.5s; }
         #player { position: absolute; left: 100px; font-size: 50px; transform: rotate(90deg); transition: transform 0.1s; }
         .obstacle { position: absolute; background: red; height: 10px; border-radius: 5px; }
-        #score { position: absolute; top: 20px; left: 20px; font-size: 30px; color: white; }
-        #msg { position: absolute; top: 40%; width: 100%; text-align: center; font-size: 40px; color: white; font-weight: bold; cursor: pointer; text-shadow: 2px 2px 4px #000; padding: 20px; }
+        #score { position: absolute; top: 20px; left: 20px; font-size: 30px; color: white; pointer-events: none; }
         
-        /* כפתור ה-AP המעודכן לטלפון */
         #ap-btn { 
             position: absolute; top: 10px; right: 10px; 
-            background: rgba(0,0,0,0.6); color: white; 
-            padding: 10px 15px; cursor: pointer; 
-            border-radius: 5px; z-index: 9999; 
-            font-size: 20px; font-weight: bold;
+            background: red; color: white; 
+            padding: 15px 20px; cursor: pointer; 
+            border-radius: 10px; z-index: 99999; 
+            font-size: 24px; font-weight: bold;
+            border: 3px solid white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
             pointer-events: auto;
         }
         
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; color: white; }
-        .panel { background: #222; padding: 20px; border-radius: 10px; text-align: center; width: 300px;}
-        input { padding: 8px; font-size: 16px; width: 80px; margin-bottom: 10px;}
-        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: #33FF57; border: none; margin: 5px; border-radius: 5px;}
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 100000; justify-content: center; align-items: center; color: white; }
+        .panel { background: #333; padding: 30px; border-radius: 15px; text-align: center; width: 85%; max-width: 300px; }
+        input { padding: 15px; font-size: 18px; width: 80%; margin-bottom: 10px; border-radius: 5px; border: none; pointer-events: auto; }
+        button { padding: 15px; font-size: 18px; width: 100%; cursor: pointer; background: #33FF57; border: none; margin-top: 10px; border-radius: 5px; font-weight: bold;}
     </style>
 </head>
 <body>
     <div id="ap-btn">AP</div>
     <div id="score">Score: 0</div>
-    <div id="msg">לחץ או גע במסך כדי להתחיל!</div>
     <div id="player">➤</div>
 
     <div id="password-modal" class="modal">
         <div class="panel">
-            <h2>הזן סיסמה</h2>
-            <input type="password" id="passInput">
-            <br><button onclick="checkPassword()">אישור</button>
+            <h2>ניהול</h2>
+            <input type="password" id="passInput" placeholder="סיסמה">
+            <button onclick="checkPassword()">כניסה</button>
             <button onclick="closeModals()" style="background:#555;">ביטול</button>
         </div>
     </div>
@@ -57,41 +56,26 @@
             Speed: <input type="number" id="speedInput"><br>
             Gravity: <input type="number" id="gravityInput" step="0.1"><br>
             <label><input type="checkbox" id="godModeToggle"> God Mode</label><br>
-            <label><input type="checkbox" id="darkModeToggle"> Dark Mode</label><br>
             <button onclick="applySettings()">החל שינויים</button>
-            <button onclick="resetGame()" style="background:#ff4444;">Reset Game</button>
             <button onclick="closeModals()">סגור</button>
         </div>
     </div>
 
     <script>
-        const colors = ['#33FF57', '#FF5733', '#3357FF', '#F333FF', '#FF33A8', '#33FFF3'];
-        let colorIndex = 0, isPaused = false, isGodMode = false;
-        let y = 300, velocity = 0, gameStarted = false, isGameOver = false, score = 0;
-        let lastColorScore = 0, obstacles = [], gameSpeed = 5, gravity = 0.3;
-        const jumpStrength = -6;
+        let isPaused = false, isGodMode = false, y = 300, velocity = 0, gameStarted = false, isGameOver = false, score = 0, obstacles = [], gameSpeed = 5, gravity = 0.3;
+        const player = document.getElementById('player'), scoreDisplay = document.getElementById('score');
 
-        const player = document.getElementById('player');
-        const msg = document.getElementById('msg');
-        const scoreDisplay = document.getElementById('score');
-
-        // טיפול בלחיצה על כפתור AP בנפרד
-        document.getElementById('ap-btn').addEventListener('touchstart', (e) => {
-            e.stopPropagation();
-            openPasswordModal();
-        }, { passive: false });
-        document.getElementById('ap-btn').addEventListener('mousedown', (e) => {
-            e.stopPropagation();
-            openPasswordModal();
-        });
-
-        function openPasswordModal() { isPaused = true; document.getElementById('password-modal').style.display = 'flex'; }
-        
-        function closeModals() { 
-            isPaused = false; 
-            document.getElementById('password-modal').style.display = 'none';
-            document.getElementById('admin-panel').style.display = 'none';
+        // פתיחת המודל עם פוקוס למקלדת
+        function openPasswordModal() { 
+            isPaused = true; 
+            document.getElementById('password-modal').style.display = 'flex'; 
+            setTimeout(() => { document.getElementById('passInput').focus(); }, 300);
         }
+
+        document.getElementById('ap-btn').addEventListener('touchstart', (e) => { e.stopPropagation(); openPasswordModal(); }, { passive: false });
+        document.getElementById('ap-btn').addEventListener('mousedown', (e) => { e.stopPropagation(); openPasswordModal(); });
+
+        function closeModals() { isPaused = false; document.getElementById('password-modal').style.display = 'none'; document.getElementById('admin-panel').style.display = 'none'; }
 
         function checkPassword() {
             if(document.getElementById('passInput').value === "4545") {
@@ -108,48 +92,27 @@
             gameSpeed = parseInt(document.getElementById('speedInput').value);
             gravity = parseFloat(document.getElementById('gravityInput').value);
             isGodMode = document.getElementById('godModeToggle').checked;
-            if(document.getElementById('darkModeToggle').checked) document.body.style.background = "#222";
-            else document.body.style.background = colors[colorIndex];
             scoreDisplay.innerText = "Score: " + score;
         }
 
-        function resetGame() { location.reload(); }
-
-        function handleInput() {
-            if (isPaused) return;
-            if (isGameOver) location.reload();
-            else if (!gameStarted) { gameStarted = true; msg.style.display = 'none'; gameLoop(); }
-            else velocity = jumpStrength;
-        }
-
+        function handleInput() { if (isPaused) return; if (isGameOver) location.reload(); gameStarted = true; velocity = -6; }
         window.addEventListener('mousedown', handleInput);
         window.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(); }, { passive: false });
 
         function gameLoop() {
             if (!gameStarted || isGameOver || isPaused) { requestAnimationFrame(gameLoop); return; }
-            velocity += gravity;
-            y += velocity;
-            player.style.top = y + 'px';
-            if (score > 0 && score % 25 === 0 && score !== lastColorScore) {
-                colorIndex = (colorIndex + 1) % colors.length;
-                document.body.style.background = colors[colorIndex];
-                lastColorScore = score;
-            }
+            velocity += gravity; y += velocity; player.style.top = y + 'px';
             obstacles.forEach((obs, index) => {
                 let obsLeft = parseInt(obs.style.left);
                 obs.style.left = (obsLeft - gameSpeed) + 'px';
-                if (!isGodMode && player.getBoundingClientRect().left < obs.getBoundingClientRect().right && 
-                    player.getBoundingClientRect().right > obs.getBoundingClientRect().left &&
-                    player.getBoundingClientRect().top < obs.getBoundingClientRect().bottom && 
-                    player.getBoundingClientRect().bottom > obs.getBoundingClientRect().top) gameOver();
+                if (!isGodMode && player.getBoundingClientRect().left < obs.getBoundingClientRect().right && player.getBoundingClientRect().right > obs.getBoundingClientRect().left && player.getBoundingClientRect().top < obs.getBoundingClientRect().bottom && player.getBoundingClientRect().bottom > obs.getBoundingClientRect().top) isGameOver = true;
                 if (obsLeft < -100) { obs.remove(); obstacles.splice(index, 1); score++; scoreDisplay.innerText = "Score: " + score; }
             });
-            if (y > window.innerHeight || y < 0) gameOver();
+            if (y > window.innerHeight || y < 0) isGameOver = true;
             requestAnimationFrame(gameLoop);
         }
-
-        function gameOver() { isGameOver = true; msg.style.display = 'block'; msg.innerHTML = "GAME OVER!<br>" + score; }
         setInterval(() => { if (!isPaused && gameStarted && !isGameOver) { const obs = document.createElement('div'); obs.className = 'obstacle'; obs.style.width = '100px'; obs.style.top = (Math.random() * (window.innerHeight - 50)) + 'px'; obs.style.left = window.innerWidth + 'px'; document.body.appendChild(obs); obstacles.push(obs); }}, 1500);
+        gameLoop();
     </script>
 </body>
 </html>
