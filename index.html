@@ -11,33 +11,60 @@
         var sc_security="bd1c8e65"; 
     </script>
     <script type="text/javascript" src="https://www.statcounter.com/counter/counter.js" async></script>
+
     <style>
         body { margin: 0; overflow: hidden; background: #33FF57; font-family: 'Arial', sans-serif; touch-action: none; transition: background 0.5s; }
         #player { position: absolute; left: 100px; font-size: 50px; transform: rotate(90deg); transition: transform 0.1s; }
         .obstacle { position: absolute; background: red; height: 10px; border-radius: 5px; }
         #score { position: absolute; top: 20px; left: 20px; font-size: 30px; color: white; }
         #msg { position: absolute; top: 40%; width: 100%; text-align: center; font-size: 40px; color: white; font-weight: bold; cursor: pointer; text-shadow: 2px 2px 4px #000; padding: 20px; }
+        
+        /* עיצוב כפתור ה-AP */
+        #ap-btn { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.5); color: white; padding: 5px 10px; cursor: pointer; border-radius: 5px; z-index: 100; }
+        
+        /* עיצוב המודלים (חלונות קופצים) */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; color: white; }
+        .panel { background: #333; padding: 20px; border-radius: 10px; text-align: center; }
+        input { padding: 10px; font-size: 18px; width: 150px; }
+        button { padding: 10px 20px; font-size: 18px; cursor: pointer; background: #33FF57; border: none; margin-top: 10px; }
     </style>
 </head>
 <body>
+    <div id="ap-btn" onclick="openPasswordModal()">AP</div>
     <div id="score">Score: 0</div>
     <div id="msg">לחץ או גע במסך כדי להתחיל!</div>
     <div id="player">➤</div>
 
+    <div id="password-modal" class="modal">
+        <div class="panel">
+            <h2>הזן סיסמה</h2>
+            <input type="password" id="passInput" placeholder="סיסמה">
+            <br><button onclick="checkPassword()">אישור</button>
+        </div>
+    </div>
+
+    <div id="admin-panel" class="modal">
+        <div class="panel">
+            <h2>פאנל ניהול</h2>
+            Score: <input type="number" id="scoreInput"><br>
+            Speed: <input type="number" id="speedInput"><br>
+            <button onclick="applySettings()">החל שינויים</button>
+            <button onclick="closeAdmin()">סגור</button>
+        </div>
+    </div>
+
     <script>
         const colors = ['#33FF57', '#FF5733', '#3357FF', '#F333FF', '#FF33A8', '#33FFF3'];
         let colorIndex = 0;
+        let isPaused = false;
+        let adminSpeed = 0; // אם 0, משתמש במהירות האוטומטית
 
         function changeBackgroundColor() {
             colorIndex = (colorIndex + 1) % colors.length;
             document.body.style.background = colors[colorIndex];
         }
 
-        document.addEventListener('contextmenu', event => event.preventDefault());
-
         const jumpSound = new Audio('https://actions.google.com/sounds/v1/ui/click.ogg');
-        jumpSound.load();
-
         const player = document.getElementById('player');
         const msg = document.getElementById('msg');
         const scoreDisplay = document.getElementById('score');
@@ -49,49 +76,45 @@
         const gravity = 0.3, jumpStrength = -6;
 
         function handleInput() {
-            if (isGameOver) {
-                location.reload();
-            } else if (!gameStarted) {
+            if (isGameOver) location.reload();
+            else if (!gameStarted) {
                 gameStarted = true;
                 msg.style.display = 'none';
-                
-                // איפוס צבע לירוק בתחילת משחק
-                colorIndex = 0;
-                document.body.style.background = colors[colorIndex];
-                
-                jumpSound.play().catch(() => {});
                 gameLoop();
-            } else {
+            } else if (!isPaused) {
                 velocity = jumpStrength;
-                jumpSound.currentTime = 0;
-                jumpSound.play().catch(() => {});
             }
         }
 
-        window.addEventListener('mousedown', (event) => {
-            if (event.button === 0) handleInput();
-        });
-        
-        window.addEventListener('touchstart', (event) => {
-            event.preventDefault();
-            handleInput();
-        }, { passive: false });
+        window.addEventListener('mousedown', handleInput);
+        window.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(); }, { passive: false });
 
-        function createObstacle() {
-            if (!gameStarted || isGameOver) return;
-            const obs = document.createElement('div');
-            obs.className = 'obstacle';
-            obs.style.width = '100px';
-            obs.style.top = (Math.random() * (window.innerHeight - 50)) + 'px';
-            obs.style.left = window.innerWidth + 'px';
-            document.body.appendChild(obs);
-            obstacles.push(obs);
+        // לוגיקה של הפאנל
+        function openPasswordModal() { isPaused = true; document.getElementById('password-modal').style.display = 'flex'; }
+        
+        function checkPassword() {
+            if(document.getElementById('passInput').value === "4545") {
+                document.getElementById('password-modal').style.display = 'none';
+                document.getElementById('admin-panel').style.display = 'flex';
+                document.getElementById('scoreInput').value = score;
+                document.getElementById('speedInput').value = gameSpeed;
+            } else { alert("סיסמה שגויה!"); }
         }
 
-        setInterval(createObstacle, 1500);
+        function applySettings() {
+            score = parseInt(document.getElementById('scoreInput').value);
+            adminSpeed = parseInt(document.getElementById('speedInput').value);
+            gameSpeed = adminSpeed;
+            scoreDisplay.innerText = "Score: " + score;
+        }
+
+        function closeAdmin() { 
+            document.getElementById('admin-panel').style.display = 'none'; 
+            isPaused = false; 
+        }
 
         function gameLoop() {
-            if (!gameStarted || isGameOver) return;
+            if (!gameStarted || isGameOver || isPaused) { requestAnimationFrame(gameLoop); return; }
 
             velocity += gravity;
             y += velocity;
@@ -102,38 +125,24 @@
                 lastColorScore = score;
             }
 
-            gameSpeed = score >= 50 ? 10 : (score >= 10 ? 7.5 : 5);
+            if (adminSpeed === 0) gameSpeed = score >= 50 ? 10 : (score >= 10 ? 7.5 : 5);
 
             obstacles.forEach((obs, index) => {
                 let obsLeft = parseInt(obs.style.left);
                 obs.style.left = (obsLeft - gameSpeed) + 'px';
-
-                let pRect = player.getBoundingClientRect();
-                let oRect = obs.getBoundingClientRect();
-
-                if (pRect.left < oRect.right && pRect.right > oRect.left &&
-                    pRect.top < oRect.bottom && pRect.bottom > oRect.top) {
-                    gameOver();
-                }
-
-                if (obsLeft < -100) {
-                    obs.remove();
-                    obstacles.splice(index, 1);
-                    score++;
-                    scoreDisplay.innerText = "Score: " + score;
-                }
+                if (player.getBoundingClientRect().left < obs.getBoundingClientRect().right && 
+                    player.getBoundingClientRect().right > obs.getBoundingClientRect().left &&
+                    player.getBoundingClientRect().top < obs.getBoundingClientRect().bottom && 
+                    player.getBoundingClientRect().bottom > obs.getBoundingClientRect().top) gameOver();
+                if (obsLeft < -100) { obs.remove(); obstacles.splice(index, 1); score++; scoreDisplay.innerText = "Score: " + score; }
             });
 
             if (y > window.innerHeight || y < 0) gameOver();
             requestAnimationFrame(gameLoop);
         }
 
-        function gameOver() {
-            isGameOver = true;
-            changeBackgroundColor(); 
-            msg.style.display = 'block';
-            msg.innerHTML = "GAME OVER!<br>הניקוד שלך: " + score + "<br><span style='font-size:20px'>לחץ או גע במסך כדי לנסות שוב</span>";
-        }
+        function gameOver() { isGameOver = true; msg.style.display = 'block'; msg.innerHTML = "GAME OVER!<br>" + score; }
+        setInterval(() => { if (!isPaused && gameStarted && !isGameOver) { const obs = document.createElement('div'); obs.className = 'obstacle'; obs.style.width = '100px'; obs.style.top = (Math.random() * (window.innerHeight - 50)) + 'px'; obs.style.left = window.innerWidth + 'px'; document.body.appendChild(obs); obstacles.push(obs); }}, 1500);
     </script>
 </body>
 </html>
