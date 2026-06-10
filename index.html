@@ -63,7 +63,6 @@
     </div>
 
     <script>
-        // --- 1. FIREBASE CONFIG ---
         const firebaseConfig = {
             apiKey: "AIzaSyBb-YNjJeCIk23EdUxVLrfeWkpuuicc3sY",
             authDomain: "arrowgameleaderboard.firebaseapp.com",
@@ -75,11 +74,11 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // --- 2. משתני משחק ---
         let score = 0, y = 300, velocity = 0, gameStarted = false, isGameOver = false, gameSpeed = 5, isGodMode = false;
         let isPaused = false; 
         let obstacles = [];
         let bestScore = localStorage.getItem('bestScore') || 0;
+        
         const player = document.getElementById('player');
         const scoreDisplay = document.getElementById('score');
         const bestDisplay = document.getElementById('best-score');
@@ -88,7 +87,7 @@
         bestDisplay.innerText = "Best: " + bestScore;
         fetch('https://ipapi.co/json/').then(r => r.json()).then(d => document.getElementById('location').innerText = d.city + ", " + d.country_name).catch(() => {});
 
-        // --- 3. לוגיקה ניהול ---
+        // פונקציות ניהול מצב משחק
         function openPasswordModal() { 
             isPaused = true; 
             document.getElementById('password-modal').style.display = 'flex'; 
@@ -116,7 +115,7 @@
             document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); 
         }
 
-        // --- 4. לוגיקה Firebase ---
+        // פונקציות Firebase
         async function submitScore() {
             const name = document.getElementById('playerName').value || "Anonymous";
             try {
@@ -125,12 +124,9 @@
                     score: parseInt(score), 
                     timestamp: firebase.firestore.FieldValue.serverTimestamp() 
                 });
-                alert("הניקוד נשמר בהצלחה!");
+                alert("הניקוד נשמר!");
                 updateLeaderboard();
-            } catch (error) {
-                console.error("Error: ", error);
-                alert("שגיאה בשמירה.");
-            }
+            } catch (e) { alert("שגיאה בשמירה."); }
         }
 
         async function updateLeaderboard() {
@@ -139,16 +135,12 @@
             try {
                 const snapshot = await db.collection("scores").orderBy("score", "desc").limit(3).get();
                 let html = "";
-                snapshot.forEach((doc, i) => { 
-                    html += `<p>${i+1}. ${doc.data().name}: ${doc.data().score}</p>`; 
-                });
-                listDiv.innerHTML = html || "אין עדיין ניקודים.";
-            } catch (e) {
-                listDiv.innerHTML = "שגיאה בטעינת הנתונים.";
-            }
+                snapshot.forEach((doc, i) => { html += `<p>${i+1}. ${doc.data().name}: ${doc.data().score}</p>`; });
+                listDiv.innerHTML = html || "אין ניקודים.";
+            } catch (e) { listDiv.innerHTML = "שגיאה."; }
         }
 
-        // --- 5. מנוע המשחק ---
+        // מנוע המשחק
         function gameOver() {
             isGameOver = true;
             if (score > bestScore) { bestScore = score; localStorage.setItem('bestScore', bestScore); }
@@ -157,32 +149,24 @@
         }
 
         function handleJump(e) {
-            // שכבת הגנה קשיחה: אם מושהה או נגמר, אל תעשה כלום
+            // בדיקה הכי קשוחה שיש
             if(isGameOver || isPaused) return; 
             
             gameStarted = true; 
             velocity = -6; 
         }
 
-        // מאזיני אירועים
-        gameContainer.addEventListener('touchstart', (e) => {
-             // אם מושהה, תפסיק מיד (מונע גרירת אירועים)
-            if(isPaused) return;
-            handleJump(e);
-        }, {passive: false});
-
-        window.addEventListener('mousedown', (e) => {
-            // אם מושהה, תפסיק מיד
-            if(isPaused) return;
-            handleJump(e);
-        });
+        gameContainer.addEventListener('touchstart', handleJump);
+        window.addEventListener('mousedown', handleJump);
 
         function gameLoop() {
-            // אם מושהה - המשחק נעצר לגמרי
-            if (!gameStarted || isGameOver || isPaused) { 
-                requestAnimationFrame(gameLoop); 
-                return; 
+            // הבדיקה הראשונה בתוך הלופ - אם מושהה, תעצור הכל מיד!
+            if (isPaused) {
+                requestAnimationFrame(gameLoop);
+                return;
             }
+
+            if (!gameStarted || isGameOver) { requestAnimationFrame(gameLoop); return; }
             
             velocity += 0.3; y += velocity; player.style.top = y + 'px';
             if (y > window.innerHeight || y < 0) gameOver();
@@ -198,7 +182,7 @@
         }
 
         setInterval(() => {
-            if (gameStarted && !isGameOver && !isPaused) { 
+            if (gameStarted && !isGameOver && !isPaused) {
                 const obs = document.createElement('div');
                 obs.className = 'obstacle';
                 obs.style.top = (Math.random() * (window.innerHeight - 50)) + 'px';
