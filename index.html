@@ -2,28 +2,36 @@
 <html lang="he">
 <head>
     <meta charset="UTF-8">
-    <title>Arrow Game - Final Edition</title>
+    <title>Arrow Game - Full Source</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
     
     <style>
         body { margin: 0; overflow: hidden; background: #33FF57; font-family: sans-serif; }
+        
         #game-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; touch-action: none; transition: none; }
+        
         #player { position: absolute; left: 100px; font-size: 50px; transform: rotate(90deg); z-index: 2; top: 300px; transition: all 0.3s; }
+        
         .obstacle { position: absolute; background: red; height: 10px; width: 100px; border-radius: 5px; z-index: 1; }
+        
         #score, #best-score, #location { position: absolute; left: 20px; color: white; font-size: 20px; pointer-events: none; z-index: 10; font-weight: bold; }
         #score { top: 20px; }
         #best-score { top: 50px; color: yellow; }
         #location { top: 80px; font-size: 15px; font-style: italic; }
+        
         #ap-btn { position: absolute; top: 10px; right: 10px; background: red; color: white; padding: 10px; cursor: pointer; z-index: 999; border-radius: 5px; }
+        
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; justify-content: center; align-items: center; color: white; flex-direction: column; }
         .panel { background: #333; padding: 20px; border-radius: 15px; text-align: center; z-index: 10001; }
+        
         input, select { padding: 10px; margin: 5px; border-radius: 5px; border: none; width: 200px; }
         button { padding: 10px 20px; cursor: pointer; margin: 5px; border-radius: 5px; border: none; background: #fff; }
     </style>
 </head>
 <body>
     <div id="ap-btn" onclick="openPasswordModal()">AP</div>
+    
     <div id="score">Score: 0</div>
     <div id="best-score">Best: 0</div>
     <div id="location">Loading location...</div>
@@ -34,6 +42,7 @@
 
     <div id="password-modal" class="modal">
         <div class="panel">
+            <h2>כניסת מנהל</h2>
             <input type="password" id="passInput" placeholder="סיסמה">
             <button onclick="checkPassword()">אישור</button>
             <button onclick="closeModals()">ביטול</button>
@@ -42,15 +51,18 @@
 
     <div id="admin-panel" class="modal">
         <div class="panel">
+            <h2>Admin Panel</h2>
             Score: <input type="number" id="scoreInput"><br>
             Speed: <input type="number" id="speedInput"><br>
             <label><input type="checkbox" id="godModeToggle"> God Mode</label><br>
+            
             Skin: <select id="skinInput">
                 <option value="➤">חץ רגיל (➤)</option>
                 <option value="🚀">טיל (🚀)</option>
                 <option value="🔥">אש (🔥)</option>
                 <option value="😎">סמיילי (😎)</option>
             </select><br>
+            
             <button onclick="applySettings()">החל שינויים</button>
             <hr>
             <button onclick="kickAllPlayers()" style="background: red; color: white; width: 100%; margin-top: 10px;">Kick All Players</button>
@@ -62,15 +74,18 @@
             <h1>GAME OVER!</h1>
             <input type="text" id="playerName" placeholder="הכנס שם ללוח">
             <button onclick="submitScore()">שמור ניקוד</button>
+            
             <div id="leaderboard">
                 <h3>Top 3:</h3>
                 <div id="list">טוען...</div>
             </div>
+            
             <button onclick="location.reload()">שחק שוב</button>
         </div>
     </div>
 
     <script>
+        // --- Firebase Config ---
         const firebaseConfig = {
             apiKey: "AIzaSyBb-YNjJeCIk23EdUxVLrfeWkpuuicc3sY",
             authDomain: "arrowgameleaderboard.firebaseapp.com",
@@ -82,20 +97,7 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // מאזין לשינויים בשרת (Kick, Skins)
-        db.collection("system").doc("settings").onSnapshot((doc) => {
-            if (!doc.exists) return;
-            const data = doc.data();
-            
-            // פקודת רענון
-            if (data.command === "reload") location.reload();
-            
-            // עדכון סקין
-            if (data.playerIcon) {
-                document.getElementById('player').innerText = data.playerIcon;
-            }
-        });
-
+        // --- Game Variables ---
         let score = 0, y = 300, velocity = 0, gameStarted = false, isGameOver = false, gameSpeed = 5, isGodMode = false, isPaused = false;
         let obstacles = [];
         let bestScore = localStorage.getItem('bestScore') || 0;
@@ -106,11 +108,42 @@
         const gameContainer = document.getElementById('game-container');
 
         bestDisplay.innerText = "Best: " + bestScore;
-        fetch('https://ipapi.co/json/').then(r => r.json()).then(d => document.getElementById('location').innerText = d.city + ", " + d.country_name).catch(() => {});
-
-        // ניהול מודלים
-        function openPasswordModal() { isPaused = true; gameContainer.style.pointerEvents = 'none'; document.getElementById('password-modal').style.display = 'flex'; }
         
+        // Location Fetch
+        fetch('https://ipapi.co/json/').then(r => r.json()).then(d => {
+            document.getElementById('location').innerText = d.city + ", " + d.country_name;
+        }).catch(() => {});
+
+        // --- Real-time Listeners ---
+        db.collection("system").doc("settings").onSnapshot((doc) => {
+            if (!doc.exists) return;
+            const data = doc.data();
+            
+            // Check for Kick/Reload command
+            if (data.command === "reload") {
+                db.collection("system").doc("settings").update({ command: "" });
+                location.reload();
+            }
+            
+            // Update Skin
+            if (data.playerIcon) {
+                document.getElementById('player').innerText = data.playerIcon;
+            }
+        });
+
+        // --- Admin Functions ---
+        function openPasswordModal() { 
+            isPaused = true; 
+            gameContainer.style.pointerEvents = 'none'; 
+            document.getElementById('password-modal').style.display = 'flex'; 
+        }
+
+        function closeModals() { 
+            isPaused = false; 
+            gameContainer.style.pointerEvents = 'auto';
+            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); 
+        }
+
         function checkPassword() {
             if(document.getElementById('passInput').value === "1245") {
                 document.getElementById('password-modal').style.display = 'none';
@@ -125,28 +158,26 @@
             gameSpeed = parseInt(document.getElementById('speedInput').value);
             isGodMode = document.getElementById('godModeToggle').checked;
             const skin = document.getElementById('skinInput').value;
-
+            
             scoreDisplay.innerText = "Score: " + score;
             
-            // שמירה ל-Firebase
             await db.collection("system").doc("settings").update({
                 score: score,
                 gameSpeed: gameSpeed,
                 isGodMode: isGodMode,
                 playerIcon: skin
             });
+            alert("הגדרות עודכנו!");
             closeModals();
         }
 
-        function closeModals() { isPaused = false; gameContainer.style.pointerEvents = 'auto'; document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
-
         async function kickAllPlayers() {
             if (confirm("אתה בטוח? זה ירענן את המשחק לכולם!")) {
-                await db.collection("system").doc("settings").set({ command: "reload" });
+                await db.collection("system").doc("settings").update({ command: "reload" });
             }
         }
 
-        // ניקוד
+        // --- Score & Leaderboard ---
         async function submitScore() {
             const name = document.getElementById('playerName').value || "Anonymous";
             try {
@@ -166,7 +197,7 @@
             } catch (e) { listDiv.innerHTML = "שגיאה."; }
         }
 
-        // מנוע המשחק
+        // --- Game Engine ---
         function gameOver() {
             isGameOver = true;
             if (score > bestScore) { bestScore = score; localStorage.setItem('bestScore', bestScore); }
@@ -182,15 +213,27 @@
             if (isPaused) { requestAnimationFrame(gameLoop); return; }
             if (!gameStarted || isGameOver) { requestAnimationFrame(gameLoop); return; }
             
-            velocity += 0.3; y += velocity; player.style.top = y + 'px';
+            velocity += 0.3; 
+            y += velocity; 
+            player.style.top = y + 'px';
+            
             if (y > window.innerHeight || y < 0) gameOver();
             
             obstacles.forEach((obs, index) => {
                 let obsLeft = parseInt(obs.style.left);
                 obs.style.left = (obsLeft - gameSpeed) + 'px';
-                let p = player.getBoundingClientRect(), o = obs.getBoundingClientRect();
+                
+                let p = player.getBoundingClientRect();
+                let o = obs.getBoundingClientRect();
+                
                 if (!isGodMode && p.left < o.right && p.right > o.left && p.top < o.bottom && p.bottom > o.top) gameOver();
-                if (obsLeft < -100) { obs.remove(); obstacles.splice(index, 1); score++; scoreDisplay.innerText = "Score: " + score; }
+                
+                if (obsLeft < -100) { 
+                    obs.remove(); 
+                    obstacles.splice(index, 1); 
+                    score++; 
+                    scoreDisplay.innerText = "Score: " + score; 
+                }
             });
             requestAnimationFrame(gameLoop);
         }
