@@ -2,7 +2,7 @@
 <html lang="he">
 <head>
     <meta charset="UTF-8">
-    <title>Arrow Game</title>
+    <title>Arrow Game - Full</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
     <script type="text/javascript">
@@ -16,7 +16,8 @@
         body { margin: 0; overflow: hidden; background: #33FF57; font-family: 'Arial', sans-serif; touch-action: none; transition: background 0.5s; }
         #player { position: absolute; left: 100px; font-size: 50px; transform: rotate(90deg); transition: transform 0.1s; }
         .obstacle { position: absolute; background: red; height: 10px; border-radius: 5px; }
-        #score { position: absolute; top: 20px; left: 20px; font-size: 30px; color: white; pointer-events: none; }
+        #score { position: absolute; top: 20px; left: 20px; font-size: 30px; color: white; pointer-events: none; z-index: 10; }
+        #msg { position: absolute; top: 40%; width: 100%; text-align: center; font-size: 40px; color: white; font-weight: bold; text-shadow: 2px 2px 4px #000; padding: 20px; z-index: 5; }
         
         #ap-btn { 
             position: absolute; top: 10px; right: 10px; 
@@ -38,6 +39,7 @@
 <body>
     <div id="ap-btn">AP</div>
     <div id="score">Score: 0</div>
+    <div id="msg">לחץ על המסך כדי להתחיל!</div>
     <div id="player">➤</div>
 
     <div id="password-modal" class="modal">
@@ -63,9 +65,8 @@
 
     <script>
         let isPaused = false, isGodMode = false, y = 300, velocity = 0, gameStarted = false, isGameOver = false, score = 0, obstacles = [], gameSpeed = 5, gravity = 0.3;
-        const player = document.getElementById('player'), scoreDisplay = document.getElementById('score');
+        const player = document.getElementById('player'), scoreDisplay = document.getElementById('score'), msg = document.getElementById('msg');
 
-        // פתיחת המודל עם פוקוס למקלדת
         function openPasswordModal() { 
             isPaused = true; 
             document.getElementById('password-modal').style.display = 'flex'; 
@@ -95,7 +96,13 @@
             scoreDisplay.innerText = "Score: " + score;
         }
 
-        function handleInput() { if (isPaused) return; if (isGameOver) location.reload(); gameStarted = true; velocity = -6; }
+        function handleInput() { 
+            if (isPaused) return; 
+            if (isGameOver) location.reload(); 
+            if (!gameStarted) { gameStarted = true; msg.style.display = 'none'; gameLoop(); }
+            velocity = -6; 
+        }
+
         window.addEventListener('mousedown', handleInput);
         window.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(); }, { passive: false });
 
@@ -112,7 +119,6 @@
             requestAnimationFrame(gameLoop);
         }
         setInterval(() => { if (!isPaused && gameStarted && !isGameOver) { const obs = document.createElement('div'); obs.className = 'obstacle'; obs.style.width = '100px'; obs.style.top = (Math.random() * (window.innerHeight - 50)) + 'px'; obs.style.left = window.innerWidth + 'px'; document.body.appendChild(obs); obstacles.push(obs); }}, 1500);
-        gameLoop();
     </script>
 </body>
 </html>
