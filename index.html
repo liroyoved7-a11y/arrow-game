@@ -82,8 +82,6 @@
         const bestDisplay = document.getElementById('best-score');
 
         bestDisplay.innerText = "Best: " + bestScore;
-
-        // מיקום גיאוגרפי
         fetch('https://ipapi.co/json/').then(r => r.json()).then(d => document.getElementById('location').innerText = d.city + ", " + d.country_name).catch(() => {});
 
         // --- 3. לוגיקה ניהול ---
@@ -128,7 +126,16 @@
             updateLeaderboard();
         }
 
-        window.addEventListener('mousedown', () => { if(!isGameOver) { gameStarted = true; velocity = -6; } });
+        // פונקציית קפיצה (עובדת גם במחשב וגם בטלפון)
+        function handleJump(e) {
+            if(e) e.preventDefault();
+            if(isGameOver) return;
+            gameStarted = true; 
+            velocity = -6; 
+        }
+
+        window.addEventListener('mousedown', handleJump);
+        window.addEventListener('touchstart', handleJump, {passive: false});
 
         function gameLoop() {
             if (!gameStarted || isGameOver) { requestAnimationFrame(gameLoop); return; }
