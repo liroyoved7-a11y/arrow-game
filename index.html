@@ -9,7 +9,7 @@
     <style>
         body { margin: 0; overflow: hidden; background: #33FF57; font-family: sans-serif; }
         #game-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; touch-action: none; transition: none; }
-        #player { position: absolute; left: 100px; font-size: 50px; transform: rotate(90deg); z-index: 2; top: 300px; }
+        #player { position: absolute; left: 100px; font-size: 50px; transform: rotate(90deg); z-index: 2; top: 300px; transition: all 0.3s; }
         .obstacle { position: absolute; background: red; height: 10px; width: 100px; border-radius: 5px; z-index: 1; }
         #score, #best-score, #location { position: absolute; left: 20px; color: white; font-size: 20px; pointer-events: none; z-index: 10; font-weight: bold; }
         #score { top: 20px; }
@@ -18,7 +18,7 @@
         #ap-btn { position: absolute; top: 10px; right: 10px; background: red; color: white; padding: 10px; cursor: pointer; z-index: 999; border-radius: 5px; }
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; justify-content: center; align-items: center; color: white; flex-direction: column; }
         .panel { background: #333; padding: 20px; border-radius: 15px; text-align: center; z-index: 10001; }
-        input { padding: 10px; margin: 5px; border-radius: 5px; border: none; }
+        input, select { padding: 10px; margin: 5px; border-radius: 5px; border: none; width: 200px; }
         button { padding: 10px 20px; cursor: pointer; margin: 5px; border-radius: 5px; border: none; background: #fff; }
     </style>
 </head>
@@ -45,6 +45,12 @@
             Score: <input type="number" id="scoreInput"><br>
             Speed: <input type="number" id="speedInput"><br>
             <label><input type="checkbox" id="godModeToggle"> God Mode</label><br>
+            Skin: <select id="skinInput">
+                <option value="➤">חץ רגיל (➤)</option>
+                <option value="🚀">טיל (🚀)</option>
+                <option value="🔥">אש (🔥)</option>
+                <option value="😎">סמיילי (😎)</option>
+            </select><br>
             <button onclick="applySettings()">החל שינויים</button>
             <hr>
             <button onclick="kickAllPlayers()" style="background: red; color: white; width: 100%; margin-top: 10px;">Kick All Players</button>
@@ -76,10 +82,17 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // האזנה לשינויים בשרת (Kick All)
+        // מאזין לשינויים בשרת (Kick, Skins)
         db.collection("system").doc("settings").onSnapshot((doc) => {
-            if (doc.exists && doc.data().command === "reload") {
-                location.reload();
+            if (!doc.exists) return;
+            const data = doc.data();
+            
+            // פקודת רענון
+            if (data.command === "reload") location.reload();
+            
+            // עדכון סקין
+            if (data.playerIcon) {
+                document.getElementById('player').innerText = data.playerIcon;
             }
         });
 
@@ -95,12 +108,8 @@
         bestDisplay.innerText = "Best: " + bestScore;
         fetch('https://ipapi.co/json/').then(r => r.json()).then(d => document.getElementById('location').innerText = d.city + ", " + d.country_name).catch(() => {});
 
-        // --- ניהול מצב משחק ---
-        function openPasswordModal() { 
-            isPaused = true; 
-            gameContainer.style.pointerEvents = 'none'; 
-            document.getElementById('password-modal').style.display = 'flex'; 
-        }
+        // ניהול מודלים
+        function openPasswordModal() { isPaused = true; gameContainer.style.pointerEvents = 'none'; document.getElementById('password-modal').style.display = 'flex'; }
         
         function checkPassword() {
             if(document.getElementById('passInput').value === "1245") {
@@ -111,35 +120,37 @@
             } else { alert("סיסמה שגויה"); }
         }
 
-        function applySettings() {
+        async function applySettings() {
             score = parseInt(document.getElementById('scoreInput').value);
             gameSpeed = parseInt(document.getElementById('speedInput').value);
             isGodMode = document.getElementById('godModeToggle').checked;
+            const skin = document.getElementById('skinInput').value;
+
             scoreDisplay.innerText = "Score: " + score;
+            
+            // שמירה ל-Firebase
+            await db.collection("system").doc("settings").update({
+                score: score,
+                gameSpeed: gameSpeed,
+                isGodMode: isGodMode,
+                playerIcon: skin
+            });
             closeModals();
         }
 
-        function closeModals() { 
-            isPaused = false; 
-            gameContainer.style.pointerEvents = 'auto'; 
-            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); 
-        }
+        function closeModals() { isPaused = false; gameContainer.style.pointerEvents = 'auto'; document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
 
-        // --- Firebase ---
         async function kickAllPlayers() {
             if (confirm("אתה בטוח? זה ירענן את המשחק לכולם!")) {
                 await db.collection("system").doc("settings").set({ command: "reload" });
             }
         }
 
+        // ניקוד
         async function submitScore() {
             const name = document.getElementById('playerName').value || "Anonymous";
             try {
-                await db.collection("scores").add({ 
-                    name: name, 
-                    score: parseInt(score), 
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp() 
-                });
+                await db.collection("scores").add({ name: name, score: parseInt(score), timestamp: firebase.firestore.FieldValue.serverTimestamp() });
                 alert("הניקוד נשמר!");
                 updateLeaderboard();
             } catch (e) { alert("שגיאה בשמירה."); }
@@ -147,7 +158,6 @@
 
         async function updateLeaderboard() {
             const listDiv = document.getElementById('list');
-            listDiv.innerHTML = "טוען...";
             try {
                 const snapshot = await db.collection("scores").orderBy("score", "desc").limit(3).get();
                 let html = "";
@@ -156,7 +166,7 @@
             } catch (e) { listDiv.innerHTML = "שגיאה."; }
         }
 
-        // --- מנוע ---
+        // מנוע המשחק
         function gameOver() {
             isGameOver = true;
             if (score > bestScore) { bestScore = score; localStorage.setItem('bestScore', bestScore); }
@@ -164,21 +174,12 @@
             updateLeaderboard();
         }
 
-        function handleJump(e) {
-            if(isGameOver || isPaused) return; 
-            gameStarted = true; 
-            velocity = -6; 
-        }
-
+        function handleJump(e) { if(isGameOver || isPaused) return; gameStarted = true; velocity = -6; }
         gameContainer.addEventListener('touchstart', handleJump, {passive: false});
         window.addEventListener('mousedown', handleJump);
 
         function gameLoop() {
-            if (isPaused) {
-                requestAnimationFrame(gameLoop);
-                return;
-            }
-
+            if (isPaused) { requestAnimationFrame(gameLoop); return; }
             if (!gameStarted || isGameOver) { requestAnimationFrame(gameLoop); return; }
             
             velocity += 0.3; y += velocity; player.style.top = y + 'px';
