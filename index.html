@@ -5,7 +5,6 @@
     <title>משחק החץ המאתגר - Arrow Flyer Game</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <!-- Statcounter Code -->
     <script type="text/javascript">
         var sc_project=13288355; 
         var sc_invisible=1; 
@@ -20,7 +19,15 @@
         #score { position: absolute; top: 20px; left: 20px; font-size: 30px; color: white; }
         #msg { position: absolute; top: 40%; width: 100%; text-align: center; font-size: 40px; color: white; font-weight: bold; cursor: pointer; text-shadow: 2px 2px 4px #000; padding: 20px; }
         
-        #ap-btn { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.5); color: white; padding: 5px 10px; cursor: pointer; border-radius: 5px; z-index: 100; font-size: 20px;}
+        /* כפתור ה-AP המעודכן לטלפון */
+        #ap-btn { 
+            position: absolute; top: 10px; right: 10px; 
+            background: rgba(0,0,0,0.6); color: white; 
+            padding: 10px 15px; cursor: pointer; 
+            border-radius: 5px; z-index: 9999; 
+            font-size: 20px; font-weight: bold;
+            pointer-events: auto;
+        }
         
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; color: white; }
         .panel { background: #222; padding: 20px; border-radius: 10px; text-align: center; width: 300px;}
@@ -29,7 +36,7 @@
     </style>
 </head>
 <body>
-    <div id="ap-btn" onclick="openPasswordModal()">AP</div>
+    <div id="ap-btn">AP</div>
     <div id="score">Score: 0</div>
     <div id="msg">לחץ או גע במסך כדי להתחיל!</div>
     <div id="player">➤</div>
@@ -39,6 +46,7 @@
             <h2>הזן סיסמה</h2>
             <input type="password" id="passInput">
             <br><button onclick="checkPassword()">אישור</button>
+            <button onclick="closeModals()" style="background:#555;">ביטול</button>
         </div>
     </div>
 
@@ -52,51 +60,39 @@
             <label><input type="checkbox" id="darkModeToggle"> Dark Mode</label><br>
             <button onclick="applySettings()">החל שינויים</button>
             <button onclick="resetGame()" style="background:#ff4444;">Reset Game</button>
-            <button onclick="closeAdmin()">סגור</button>
+            <button onclick="closeModals()">סגור</button>
         </div>
     </div>
 
     <script>
         const colors = ['#33FF57', '#FF5733', '#3357FF', '#F333FF', '#FF33A8', '#33FFF3'];
-        let colorIndex = 0;
-        let isPaused = false;
-        let isGodMode = false;
-
-        // משתני משחק
+        let colorIndex = 0, isPaused = false, isGodMode = false;
         let y = 300, velocity = 0, gameStarted = false, isGameOver = false, score = 0;
-        let lastColorScore = 0;
-        let obstacles = [];
-        let gameSpeed = 5;
-        let gravity = 0.3;
+        let lastColorScore = 0, obstacles = [], gameSpeed = 5, gravity = 0.3;
         const jumpStrength = -6;
 
-        function changeBackgroundColor() {
-            colorIndex = (colorIndex + 1) % colors.length;
-            document.body.style.background = colors[colorIndex];
-        }
-
-        const jumpSound = new Audio('https://actions.google.com/sounds/v1/ui/click.ogg');
         const player = document.getElementById('player');
         const msg = document.getElementById('msg');
         const scoreDisplay = document.getElementById('score');
-        
-        function handleInput() {
-            if (isGameOver) location.reload();
-            else if (!gameStarted) {
-                gameStarted = true;
-                msg.style.display = 'none';
-                gameLoop();
-            } else if (!isPaused) {
-                velocity = jumpStrength;
-            }
-        }
 
-        window.addEventListener('mousedown', handleInput);
-        window.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(); }, { passive: false });
+        // טיפול בלחיצה על כפתור AP בנפרד
+        document.getElementById('ap-btn').addEventListener('touchstart', (e) => {
+            e.stopPropagation();
+            openPasswordModal();
+        }, { passive: false });
+        document.getElementById('ap-btn').addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+            openPasswordModal();
+        });
 
-        // פונקציות פאנל
         function openPasswordModal() { isPaused = true; document.getElementById('password-modal').style.display = 'flex'; }
         
+        function closeModals() { 
+            isPaused = false; 
+            document.getElementById('password-modal').style.display = 'none';
+            document.getElementById('admin-panel').style.display = 'none';
+        }
+
         function checkPassword() {
             if(document.getElementById('passInput').value === "4545") {
                 document.getElementById('password-modal').style.display = 'none';
@@ -112,41 +108,42 @@
             gameSpeed = parseInt(document.getElementById('speedInput').value);
             gravity = parseFloat(document.getElementById('gravityInput').value);
             isGodMode = document.getElementById('godModeToggle').checked;
-            
             if(document.getElementById('darkModeToggle').checked) document.body.style.background = "#222";
             else document.body.style.background = colors[colorIndex];
-            
             scoreDisplay.innerText = "Score: " + score;
         }
 
         function resetGame() { location.reload(); }
-        function closeAdmin() { document.getElementById('admin-panel').style.display = 'none'; isPaused = false; }
+
+        function handleInput() {
+            if (isPaused) return;
+            if (isGameOver) location.reload();
+            else if (!gameStarted) { gameStarted = true; msg.style.display = 'none'; gameLoop(); }
+            else velocity = jumpStrength;
+        }
+
+        window.addEventListener('mousedown', handleInput);
+        window.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(); }, { passive: false });
 
         function gameLoop() {
             if (!gameStarted || isGameOver || isPaused) { requestAnimationFrame(gameLoop); return; }
-
             velocity += gravity;
             y += velocity;
             player.style.top = y + 'px';
-
             if (score > 0 && score % 25 === 0 && score !== lastColorScore) {
-                changeBackgroundColor();
+                colorIndex = (colorIndex + 1) % colors.length;
+                document.body.style.background = colors[colorIndex];
                 lastColorScore = score;
             }
-
             obstacles.forEach((obs, index) => {
                 let obsLeft = parseInt(obs.style.left);
                 obs.style.left = (obsLeft - gameSpeed) + 'px';
-                
-                // בדיקת התנגשות (אלא אם God Mode פעיל)
                 if (!isGodMode && player.getBoundingClientRect().left < obs.getBoundingClientRect().right && 
                     player.getBoundingClientRect().right > obs.getBoundingClientRect().left &&
                     player.getBoundingClientRect().top < obs.getBoundingClientRect().bottom && 
                     player.getBoundingClientRect().bottom > obs.getBoundingClientRect().top) gameOver();
-                
                 if (obsLeft < -100) { obs.remove(); obstacles.splice(index, 1); score++; scoreDisplay.innerText = "Score: " + score; }
             });
-
             if (y > window.innerHeight || y < 0) gameOver();
             requestAnimationFrame(gameLoop);
         }
