@@ -77,6 +77,7 @@
 
         // --- 2. משתני משחק ---
         let score = 0, y = 300, velocity = 0, gameStarted = false, isGameOver = false, gameSpeed = 5, isGodMode = false;
+        let isPaused = false; // משתנה חדש למצב השהיה
         let obstacles = [];
         let bestScore = localStorage.getItem('bestScore') || 0;
         const player = document.getElementById('player');
@@ -88,7 +89,11 @@
         fetch('https://ipapi.co/json/').then(r => r.json()).then(d => document.getElementById('location').innerText = d.city + ", " + d.country_name).catch(() => {});
 
         // --- 3. לוגיקה ניהול ---
-        function openPasswordModal() { document.getElementById('password-modal').style.display = 'flex'; }
+        function openPasswordModal() { 
+            isPaused = true; // עוצר את המשחק
+            document.getElementById('password-modal').style.display = 'flex'; 
+        }
+        
         function checkPassword() {
             if(document.getElementById('passInput').value === "1245") {
                 document.getElementById('password-modal').style.display = 'none';
@@ -97,6 +102,7 @@
                 document.getElementById('speedInput').value = gameSpeed;
             } else { alert("סיסמה שגויה"); }
         }
+
         function applySettings() {
             score = parseInt(document.getElementById('scoreInput').value);
             gameSpeed = parseInt(document.getElementById('speedInput').value);
@@ -104,7 +110,11 @@
             scoreDisplay.innerText = "Score: " + score;
             closeModals();
         }
-        function closeModals() { document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
+
+        function closeModals() { 
+            isPaused = false; // מחזיר את המשחק
+            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); 
+        }
 
         // --- 4. לוגיקה Firebase ---
         async function submitScore() {
@@ -116,10 +126,10 @@
                     timestamp: firebase.firestore.FieldValue.serverTimestamp() 
                 });
                 alert("הניקוד נשמר בהצלחה!");
-                updateLeaderboard(); // עדכון הרשימה לאחר שמירה
+                updateLeaderboard();
             } catch (error) {
-                console.error("Error adding document: ", error);
-                alert("שגיאה בשמירה, בדוק את חיבור האינטרנט.");
+                console.error("Error: ", error);
+                alert("שגיאה בשמירה.");
             }
         }
 
@@ -147,7 +157,7 @@
         }
 
         function handleJump(e) {
-            if(isGameOver) return;
+            if(isGameOver || isPaused) return; // לא קופץ אם המשחק מושהה
             gameStarted = true; 
             velocity = -6; 
         }
@@ -156,7 +166,12 @@
         window.addEventListener('mousedown', handleJump);
 
         function gameLoop() {
-            if (!gameStarted || isGameOver) { requestAnimationFrame(gameLoop); return; }
+            // הוספנו כאן את isPaused לתנאי העצירה
+            if (!gameStarted || isGameOver || isPaused) { 
+                requestAnimationFrame(gameLoop); 
+                return; 
+            }
+            
             velocity += 0.3; y += velocity; player.style.top = y + 'px';
             if (y > window.innerHeight || y < 0) gameOver();
             
@@ -171,7 +186,7 @@
         }
 
         setInterval(() => {
-            if (gameStarted && !isGameOver) {
+            if (gameStarted && !isGameOver && !isPaused) { // גם ה-setInterval יבדוק אם מושהה
                 const obs = document.createElement('div');
                 obs.className = 'obstacle';
                 obs.style.top = (Math.random() * (window.innerHeight - 50)) + 'px';
