@@ -91,6 +91,7 @@
         let score = 0, y = 300, velocity = 0, gameStarted = false, isGameOver = false, gameSpeed = 5, isGodMode = false, isPaused = false;
         let lastReloadTime = null;
         let obstacles = [];
+        let announcementTimer; // משתנה לטיימר של ההודעה
         const player = document.getElementById('player');
 
         db.collection("system").doc("settings").onSnapshot((doc) => {
@@ -109,6 +110,14 @@
                 const bar = document.getElementById('announcement-bar');
                 bar.innerText = data.message;
                 bar.style.display = data.message.trim() ? 'flex' : 'none';
+                
+                // --- קוד חדש להעלמת ההודעה אחרי 10 שניות ---
+                if (data.message.trim() !== "") {
+                    clearTimeout(announcementTimer); // מנקה טיימר קודם אם היה
+                    announcementTimer = setTimeout(() => {
+                        bar.style.display = 'none';
+                    }, 10000); // 10,000 מילי-שניות = 10 שניות
+                }
             }
         });
 
