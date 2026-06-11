@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate Arrow Game - Full Version</title>
+    <title>Ultimate Monkey Game - Full Code</title>
 
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
     
     <style>
-        /* הגדרות גלובליות */
+        /* הגדרות עיצוב כלליות למסך המשחק */
         body { 
             margin: 0; 
             overflow: hidden; 
@@ -18,7 +18,7 @@
             transition: background 1s ease; 
         }
         
-        /* סרגל הודעות מנהל */
+        /* סרגל הודעות מנהל שמופיע למעלה */
         #announcement-bar { 
             position: fixed; 
             top: 0; 
@@ -51,7 +51,7 @@
             touch-action: none; 
         }
         
-        /* עיצוב השחקן */
+        /* עיצוב השחקן - הקוף */
         #player { 
             position: absolute; 
             left: 100px; 
@@ -67,21 +67,24 @@
             height: 50px;
         }
         
-        /* הפס הצהוב על הבטן של הקוף */
+        /* הפס הצהוב על הגוף של הקוף
+           המיקום מכוון אלכסונית מהאוזן ליד
+        */
         #monkey-accessory { 
             position: absolute;
-            top: 22px; /* מיקום בבטן */
-            left: 10px;
-            width: 30px; 
+            top: 15px; 
+            left: 12px;
+            width: 25px; 
             height: 6px; 
             background: yellow; 
             border-radius: 3px; 
             display: none; 
             box-shadow: 0 0 5px orange; 
             z-index: 3;
+            transform: rotate(45deg); /* יצירת האלכסון */
         }
         
-        /* עיצוב המכשולים (לייזרים אדומים) */
+        /* עיצוב המכשולים - לייזרים אדומים */
         .obstacle { 
             position: absolute; 
             background: red; 
@@ -93,7 +96,7 @@
             border: 1px solid darkred;
         }
         
-        /* ממשק משתמש */
+        /* טקסטים של ניקוד ומיקום */
         #score, #best-score, #location { 
             position: absolute; 
             left: 20px; 
@@ -108,6 +111,7 @@
         #best-score { top: 90px; color: yellow; }
         #location { top: 120px; font-size: 15px; font-style: italic; }
         
+        /* כפתור כניסת מנהל */
         #ap-btn { 
             position: absolute; 
             top: 60px; 
@@ -121,7 +125,7 @@
             font-weight: bold; 
         }
         
-        /* חלונות מודאליים */
+        /* עיצוב כללי של חלונות קופצים (Modals) */
         .modal { 
             display: none; 
             position: fixed; 
@@ -148,6 +152,7 @@
             width: 300px; 
         }
 
+        /* הגדרות לכפתורים ושדות טקסט בתוך החלונות */
         input, select { padding: 10px; margin: 5px; border-radius: 5px; border: 1px solid #ccc; width: 200px; }
         button { padding: 10px 20px; cursor: pointer; margin: 5px; border-radius: 5px; border: none; background: #fff; font-weight: bold; }
     </style>
@@ -223,36 +228,50 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // משתני משחק
-        let score = 0, y = 300, velocity = 0, gameStarted = false, isGameOver = false, gameSpeed = 5, isGodMode = false, isPaused = false;
+        // משתני מערכת המשחק
+        let score = 0;
+        let y = 300;
+        let velocity = 0;
+        let gameStarted = false;
+        let isGameOver = false;
+        let gameSpeed = 5;
+        let isGodMode = false;
+        let isPaused = false;
         let lastReloadTime = null;
         let obstacles = [];
         let announcementTimer; 
+
+        // רכיבי ה-DOM
         const player = document.getElementById('player');
         const playerIcon = document.getElementById('player-icon');
         const accessory = document.getElementById('monkey-accessory');
 
-        // פונקציה לעדכון סקין והאביזר
+        // עדכון סקין והצגת אביזר רק על הקוף
         function updatePlayerSkin() {
             const skin = document.getElementById('skinInput').value;
             playerIcon.innerText = skin;
-            // מציג את הפס הצהוב רק אם הסקין הוא קוף
             accessory.style.display = (skin === '🐒') ? 'block' : 'none';
         }
 
-        // האזנה ל-Firebase
+        // האזנה לעדכונים מ-Firebase
         db.collection("system").doc("settings").onSnapshot((doc) => {
             if (!doc.exists) return;
             const data = doc.data();
             
+            // בדיקת רענון כולל
             if (lastReloadTime === null) { lastReloadTime = data.command; }
             else if (data.command && data.command !== lastReloadTime) { location.reload(); }
             
+            // עדכון סקין מרחוק
             if (data.playerIcon) {
                 playerIcon.innerText = data.playerIcon;
                 accessory.style.display = (data.playerIcon === '🐒') ? 'block' : 'none';
             }
+            
+            // עדכון צבע רקע
             if (data.backgroundColor) document.body.style.backgroundColor = data.backgroundColor;
+            
+            // עדכון הודעות מנהל
             if (data.message) {
                 const bar = document.getElementById('announcement-bar');
                 bar.innerText = data.message;
@@ -262,24 +281,41 @@
             }
         });
 
-        // פונקציות ניהול מודלים
-        function openPasswordModal() { isPaused = true; document.getElementById('password-modal').style.display = 'flex'; }
-        function closeModals() { isPaused = false; document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
+        // פונקציות ניהול חלונות
+        function openPasswordModal() { 
+            isPaused = true; 
+            document.getElementById('password-modal').style.display = 'flex'; 
+        }
+        
+        function closeModals() { 
+            isPaused = false; 
+            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); 
+        }
+
         function checkPassword() {
             if(document.getElementById('passInput').value === "1245") {
                 document.getElementById('password-modal').style.display = 'none';
                 document.getElementById('admin-panel').style.display = 'flex';
-            } else { alert("סיסמה שגויה"); }
+            } else { 
+                alert("סיסמה שגויה"); 
+            }
         }
 
-        // פונקציות ניהול שרת
-        async function sendAnnouncement() { await db.collection("system").doc("settings").update({ message: document.getElementById('msgInput').value }); alert("נשלח!"); }
-        async function kickAllPlayers() { await db.collection("system").doc("settings").update({ command: Date.now() }); }
+        // פונקציות שרת
+        async function sendAnnouncement() { 
+            await db.collection("system").doc("settings").update({ message: document.getElementById('msgInput').value }); 
+            alert("נשלח!"); 
+        }
+
+        async function kickAllPlayers() { 
+            await db.collection("system").doc("settings").update({ command: Date.now() }); 
+        }
         
         async function applySettings() {
             score = parseInt(document.getElementById('scoreInput').value) || score;
             gameSpeed = parseInt(document.getElementById('speedInput').value) || gameSpeed;
             isGodMode = document.getElementById('godModeToggle').checked;
+            
             await db.collection("system").doc("settings").update({ 
                 playerIcon: document.getElementById('skinInput').value,
                 backgroundColor: document.getElementById('colorInput').value
@@ -289,7 +325,11 @@
 
         async function submitScore() {
             const name = document.getElementById('playerName').value || "Anonymous";
-            await db.collection("scores").add({ name: name, score: parseInt(score), timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+            await db.collection("scores").add({ 
+                name: name, 
+                score: parseInt(score), 
+                timestamp: firebase.firestore.FieldValue.serverTimestamp() 
+            });
             updateLeaderboard();
             alert("נשמר!");
         }
@@ -301,17 +341,20 @@
             document.getElementById('list').innerHTML = html;
         }
 
-        // לולאת משחק ראשית
+        // לולאת המשחק הראשית (Game Loop)
         function gameLoop() {
             if (isPaused) { requestAnimationFrame(gameLoop); return; }
             if (!gameStarted || isGameOver) { requestAnimationFrame(gameLoop); return; }
             
+            // לוגיקת כבידה
             velocity += 0.3; 
             y += velocity; 
             player.style.top = y + 'px';
             
+            // בדיקת יציאה מהמסך
             if (y > window.innerHeight || y < 0) gameOver();
             
+            // לוגיקת מכשולים
             obstacles.forEach((obs, index) => {
                 let obsLeft = parseInt(obs.style.left);
                 obs.style.left = (obsLeft - gameSpeed) + 'px';
@@ -319,36 +362,46 @@
                 let p = player.getBoundingClientRect();
                 let o = obs.getBoundingClientRect();
                 
-                // בדיקת התנגשות
-                if (!isGodMode && p.left < o.right && p.right > o.left && p.top < o.bottom && p.bottom > o.top) { gameOver(); }
+                // בדיקת התנגשות (אלא אם ה-God Mode פעיל)
+                if (!isGodMode && p.left < o.right && p.right > o.left && p.top < o.bottom && p.bottom > o.top) { 
+                    gameOver(); 
+                }
 
+                // ניקוד
                 if (!obs.passed && obsLeft + 80 < 100) {
                     obs.passed = true;
                     score++;
                     document.getElementById('score').innerText = "Score: " + score;
                 }
                 
-                if (obsLeft < -100) { obs.remove(); obstacles.splice(index, 1); }
+                // הסרת מכשול שעבר את המסך
+                if (obsLeft < -100) { 
+                    obs.remove(); 
+                    obstacles.splice(index, 1); 
+                }
             });
             requestAnimationFrame(gameLoop);
         }
 
+        // סיום משחק
         function gameOver() {
             isGameOver = true;
             document.getElementById('game-over-modal').style.display = 'flex';
             updateLeaderboard();
         }
 
+        // קפיצה
         function handleJump() { 
             if(isGameOver || isPaused) return; 
             gameStarted = true; 
             velocity = -6;
         }
 
+        // האזנה לקליקים/טאץ'
         window.addEventListener('mousedown', handleJump);
         window.addEventListener('touchstart', handleJump);
 
-        // יצירת מכשולים
+        // יצירת מכשולים חדשים כל 1.2 שניות
         setInterval(() => {
             if (gameStarted && !isGameOver && !isPaused) {
                 const obs = document.createElement('div');
@@ -361,7 +414,7 @@
             }
         }, 1200);
 
-        // הפעלה ראשונית
+        // התחלת המשחק
         gameLoop();
     </script>
 </body>
