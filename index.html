@@ -3,152 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arrow Game - Full Version</title>
+    <title>Arrow Game - Full Complete Version</title>
 
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
     
     <style>
-        /* הגדרות עיצוב כלליות של העמוד */
+        /* הגדרות עיצוב כלליות */
         body { 
-            margin: 0; 
-            overflow: hidden; 
-            background: #33FF57; 
-            font-family: sans-serif; 
-            transition: background 1s ease; 
+            margin: 0; overflow: hidden; background: #33FF57; font-family: sans-serif; transition: background 1s ease; 
         }
         
-        /* הבר של ההודעות שמופיע למעלה */
+        /* באר התראות */
         #announcement-bar { 
-            position: fixed; 
-            top: 0; 
-            width: 100%; 
-            height: 50px; 
-            background: red; 
-            color: yellow; 
-            display: none; 
-            align-items: center; 
-            justify-content: center; 
-            font-size: 25px; 
-            font-weight: bold; 
-            z-index: 9999; 
-            border-bottom: 5px solid yellow; 
-            animation: flash 0.5s infinite; 
+            position: fixed; top: 0; width: 100%; height: 50px; background: red; color: yellow; 
+            display: none; align-items: center; justify-content: center; font-size: 25px; 
+            font-weight: bold; z-index: 9999; border-bottom: 5px solid yellow; animation: flash 0.5s infinite; 
         }
+        @keyframes flash { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
-        /* אנימציה להבהוב של הבר */
-        @keyframes flash { 
-            0% { opacity: 1; } 
-            50% { opacity: 0.7; } 
-            100% { opacity: 1; } 
-        }
-
-        /* מכל המשחק */
-        #game-container { 
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            touch-action: none; 
-        }
+        /* קונטיינר המשחק */
+        #game-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; touch-action: none; }
         
-        /* עיצוב השחקן */
+        /* השחקן והאביזר */
         #player { 
-            position: absolute; 
-            left: 100px; 
-            font-size: 50px; 
-            transform: rotate(90deg); 
-            z-index: 2; 
-            top: 300px; 
-            transition: top 0.1s; 
+            position: absolute; left: 100px; font-size: 50px; transform: rotate(90deg); 
+            z-index: 2; top: 300px; transition: top 0.1s; display: flex; flex-direction: column; align-items: center;
         }
         
-        /* עיצוב המכשולים - צהוב ודק כפי שביקשת */
+        #monkey-accessory { 
+            width: 40px; height: 8px; background: yellow; border-radius: 4px; 
+            margin-bottom: 5px; display: none; box-shadow: 0 0 5px orange;
+        }
+        
+        /* המכשולים - פס צהוב דק */
         .obstacle { 
-            position: absolute; 
-            background: yellow; 
-            height: 10px; 
-            width: 80px; 
-            border-radius: 5px; 
-            z-index: 1; 
-            box-shadow: 0 0 10px orange; 
-            border: 1px solid orange; 
+            position: absolute; background: yellow; height: 8px; width: 80px; 
+            border-radius: 4px; z-index: 1; box-shadow: 0 0 5px orange; 
         }
         
-        /* טקסטים של ניקוד ומיקום */
+        /* ממשק משתמש */
         #score, #best-score, #location { 
-            position: absolute; 
-            left: 20px; 
-            color: white; 
-            font-size: 20px; 
-            pointer-events: none; 
-            z-index: 10; 
-            font-weight: bold; 
-            text-shadow: 1px 1px 2px black; 
+            position: absolute; left: 20px; color: white; font-size: 20px; 
+            pointer-events: none; z-index: 10; font-weight: bold; text-shadow: 1px 1px 2px black; 
         }
         #score { top: 60px; }
         #best-score { top: 90px; color: yellow; }
         #location { top: 120px; font-size: 15px; font-style: italic; }
         
-        /* כפתור ה-Admin */
         #ap-btn { 
-            position: absolute; 
-            top: 60px; 
-            right: 10px; 
-            background: red; 
-            color: white; 
-            padding: 10px; 
-            cursor: pointer; 
-            z-index: 999; 
-            border-radius: 5px; 
-            font-weight: bold; 
+            position: absolute; top: 60px; right: 10px; background: red; color: white; 
+            padding: 10px; cursor: pointer; z-index: 999; border-radius: 5px; font-weight: bold; 
         }
         
-        /* עיצוב כללי של חלונות קופצים (Modals) */
+        /* חלונות קופצים */
         .modal { 
-            display: none; 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            background: rgba(0,0,0,0.85); 
-            z-index: 10000; 
-            justify-content: center; 
-            align-items: center; 
-            color: white; 
-            flex-direction: column; 
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.85); z-index: 10000; justify-content: center; 
+            align-items: center; color: white; flex-direction: column; 
         }
-        
         .panel { 
-            background: #222; 
-            padding: 20px; 
-            border-radius: 15px; 
-            text-align: center; 
-            border: 2px solid #fff; 
-            max-height: 80vh; 
-            overflow-y: auto; 
-            width: 300px; 
+            background: #222; padding: 20px; border-radius: 15px; text-align: center; 
+            border: 2px solid #fff; max-height: 80vh; overflow-y: auto; width: 300px; 
         }
-        
-        input, select { 
-            padding: 10px; 
-            margin: 5px; 
-            border-radius: 5px; 
-            border: 1px solid #ccc; 
-            width: 200px; 
-        }
-        
-        button { 
-            padding: 10px 20px; 
-            cursor: pointer; 
-            margin: 5px; 
-            border-radius: 5px; 
-            border: none; 
-            background: #fff; 
-            font-weight: bold; 
-        }
+        input, select { padding: 10px; margin: 5px; border-radius: 5px; border: 1px solid #ccc; width: 200px; }
+        button { padding: 10px 20px; cursor: pointer; margin: 5px; border-radius: 5px; border: none; background: #fff; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -160,7 +79,10 @@
     <div id="location">Loading...</div>
     
     <div id="game-container">
-        <div id="player">➤</div>
+        <div id="player">
+            <div id="monkey-accessory"></div>
+            <span id="player-icon">🐒</span>
+        </div>
     </div>
 
     <div id="password-modal" class="modal">
@@ -180,12 +102,13 @@
             Speed: <input type="number" id="speedInput"><br>
             <label><input type="checkbox" id="godModeToggle"> God Mode</label><br>
             Skin: 
-            <select id="skinInput">
+            <select id="skinInput" onchange="updatePlayerSkin()">
                 <option value="➤">➤</option>
                 <option value="🚀">🚀</option>
                 <option value="🔥">🔥</option>
                 <option value="😎">😎</option>
-                <option value="🐒">🐒</option> </select><br>
+                <option value="🐒">🐒</option>
+            </select><br>
             BG Color: <input type="color" id="colorInput" value="#33FF57"><br>
             <input type="text" id="msgInput" placeholder="הודעה לכולם"><br>
             <button onclick="sendAnnouncement()">שלח הודעה</button><br>
@@ -206,7 +129,7 @@
     </div>
 
     <script>
-        // --- הגדרות בסיס נתונים של Firebase ---
+        // Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyBb-YNjJeCIk23EdUxVLrfeWkpuuicc3sY",
             authDomain: "arrowgameleaderboard.firebaseapp.com",
@@ -215,18 +138,26 @@
             messagingSenderId: "486658082903",
             appId: "1:486658082903:web:d6f86af4c5aba6a78ffb12"
         };
-        
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // --- משתני משחק גלובליים ---
+        // משתני משחק
         let score = 0, y = 300, velocity = 0, gameStarted = false, isGameOver = false, gameSpeed = 5, isGodMode = false, isPaused = false;
         let lastReloadTime = null;
         let obstacles = [];
         let announcementTimer; 
         const player = document.getElementById('player');
+        const playerIcon = document.getElementById('player-icon');
+        const accessory = document.getElementById('monkey-accessory');
 
-        // --- מערכת סאונד ---
+        // פונקציית עדכון סקין ואביזר
+        function updatePlayerSkin() {
+            const skin = document.getElementById('skinInput').value;
+            playerIcon.innerText = skin;
+            accessory.style.display = (skin === '🐒') ? 'block' : 'none';
+        }
+
+        // סאונד
         let audioCtx;
         function getAudioContext() {
             if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
@@ -234,90 +165,54 @@
             return audioCtx;
         }
 
-        // צליל קפיצה
-        function playJumpSound() {
+        function playSound(type) {
             try {
                 const ctx = getAudioContext();
-                const oscillator = ctx.createOscillator();
-                const gainNode = ctx.createGain();
-                oscillator.connect(gainNode);
-                gainNode.connect(ctx.destination);
-                oscillator.type = 'square';
-                oscillator.frequency.value = 400;
-                gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.1);
-                oscillator.start();
-                oscillator.stop(ctx.currentTime + 0.1);
-            } catch(e) { console.error("Sound error:", e); }
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                if(type === 'jump') {
+                    osc.type = 'square'; osc.frequency.value = 400;
+                    gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.1);
+                } else {
+                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(400, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.5);
+                    gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.5);
+                }
+                osc.start(); osc.stop(ctx.currentTime + 0.5);
+            } catch(e) {}
         }
 
-        // צליל סיום משחק
-        function playGameOverSound() {
-            try {
-                const ctx = getAudioContext();
-                const oscillator = ctx.createOscillator();
-                const gainNode = ctx.createGain();
-                oscillator.connect(gainNode);
-                gainNode.connect(ctx.destination);
-                oscillator.type = 'sawtooth';
-                oscillator.frequency.setValueAtTime(400, ctx.currentTime);
-                oscillator.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.5);
-                gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.5);
-                oscillator.start();
-                oscillator.stop(ctx.currentTime + 0.5);
-            } catch(e) { console.error("Sound error:", e); }
-        }
-
-        // --- האזנה לעדכונים מה-Firestore (מערכת ניהול) ---
+        // Firebase Listener
         db.collection("system").doc("settings").onSnapshot((doc) => {
             if (!doc.exists) return;
             const data = doc.data();
-            
-            // בדיקת פקודות מערכת (כמו ריענון)
             if (lastReloadTime === null) { lastReloadTime = data.command; }
             else if (data.command && data.command !== lastReloadTime) { location.reload(); }
             
-            // עדכון הגדרות בזמן אמת
-            if (data.playerIcon) player.innerText = data.playerIcon;
+            if (data.playerIcon) {
+                playerIcon.innerText = data.playerIcon;
+                accessory.style.display = (data.playerIcon === '🐒') ? 'block' : 'none';
+            }
             if (data.backgroundColor) document.body.style.backgroundColor = data.backgroundColor;
-            
-            // הצגת הודעות מנהל
             if (data.message) {
                 const bar = document.getElementById('announcement-bar');
                 bar.innerText = data.message;
                 bar.style.display = data.message.trim() ? 'flex' : 'none';
-                
-                if (data.message.trim() !== "") {
-                    clearTimeout(announcementTimer);
-                    announcementTimer = setTimeout(() => { bar.style.display = 'none'; }, 10000); 
-                }
+                clearTimeout(announcementTimer);
+                if (data.message.trim() !== "") announcementTimer = setTimeout(() => { bar.style.display = 'none'; }, 10000);
             }
         });
 
-        // פונקציית צבע רקע דינמית לפי ניקוד
         function updateBackgroundByScore(s) {
-            let bg = "";
-            if (s < 25) bg = "#33FF57";
-            else if (s < 50) bg = "linear-gradient(to bottom, #ffa500, #ffffff)";
-            else if (s < 100) bg = "#0000ff";
-            else if (s < 150) bg = "#000000";
-            else if (s < 300) bg = "linear-gradient(135deg, #ff0000, #ffa500, #ffffff)";
-            else bg = "#550000";
+            let bg = (s < 25) ? "#33FF57" : (s < 50) ? "linear-gradient(to bottom, #ffa500, #ffffff)" : (s < 100) ? "#0000ff" : "#000000";
             document.body.style.background = bg;
         }
 
-        // --- פונקציות ניהול ---
-        function openPasswordModal() { 
-            isPaused = true; 
-            document.getElementById('password-modal').style.display = 'flex'; 
-        }
-        
-        function closeModals() { 
-            isPaused = false; 
-            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); 
-        }
-        
+        // ניהול מודלים
+        function openPasswordModal() { isPaused = true; document.getElementById('password-modal').style.display = 'flex'; }
+        function closeModals() { isPaused = false; document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
         function checkPassword() {
             if(document.getElementById('passInput').value === "1245") {
                 document.getElementById('password-modal').style.display = 'none';
@@ -325,14 +220,8 @@
             } else { alert("סיסמה שגויה"); }
         }
 
-        async function sendAnnouncement() { 
-            await db.collection("system").doc("settings").update({ message: document.getElementById('msgInput').value }); 
-            alert("נשלח!"); 
-        }
-        
-        async function kickAllPlayers() { 
-            await db.collection("system").doc("settings").update({ command: Date.now() }); 
-        }
+        async function sendAnnouncement() { await db.collection("system").doc("settings").update({ message: document.getElementById('msgInput').value }); alert("נשלח!"); }
+        async function kickAllPlayers() { await db.collection("system").doc("settings").update({ command: Date.now() }); }
         
         async function applySettings() {
             score = parseInt(document.getElementById('scoreInput').value) || score;
@@ -345,14 +234,9 @@
             closeModals();
         }
 
-        // --- לוגיקת הניקוד ---
         async function submitScore() {
             const name = document.getElementById('playerName').value || "Anonymous";
-            await db.collection("scores").add({ 
-                name: name, 
-                score: parseInt(score), 
-                timestamp: firebase.firestore.FieldValue.serverTimestamp() 
-            });
+            await db.collection("scores").add({ name: name, score: parseInt(score), timestamp: firebase.firestore.FieldValue.serverTimestamp() });
             updateLeaderboard();
             alert("נשמר!");
         }
@@ -364,20 +248,15 @@
             document.getElementById('list').innerHTML = html;
         }
 
-        // --- לולאת המשחק הראשית (Game Loop) ---
+        // לולאת המשחק
         function gameLoop() {
             if (isPaused) { requestAnimationFrame(gameLoop); return; }
             if (!gameStarted || isGameOver) { requestAnimationFrame(gameLoop); return; }
             
-            // חישובי פיזיקה
-            velocity += 0.3; 
-            y += velocity; 
-            player.style.top = y + 'px';
+            velocity += 0.3; y += velocity; player.style.top = y + 'px';
             
-            // בדיקת נפילה מחוץ למסך
             if (y > window.innerHeight || y < 0) gameOver();
             
-            // טיפול במכשולים
             obstacles.forEach((obs, index) => {
                 let obsLeft = parseInt(obs.style.left);
                 obs.style.left = (obsLeft - gameSpeed) + 'px';
@@ -385,53 +264,35 @@
                 let p = player.getBoundingClientRect();
                 let o = obs.getBoundingClientRect();
                 
-                // התנגשות
-                if (!isGodMode && p.left < o.right && p.right > o.left && p.top < o.bottom && p.bottom > o.top) { 
-                    gameOver(); 
-                }
+                if (!isGodMode && p.left < o.right && p.right > o.left && p.top < o.bottom && p.bottom > o.top) { gameOver(); }
 
-                // ניקוד
                 if (!obs.passed && obsLeft + 80 < 100) {
                     obs.passed = true;
                     score++;
                     document.getElementById('score').innerText = "Score: " + score;
                     updateBackgroundByScore(score);
-                    
-                    // החלפת סקין בשיא מסוים
-                    if (score >= 100) {
-                        player.innerText = '🚀';
-                    }
                 }
                 
-                // מחיקת מכשול שיצא מהמסך
-                if (obsLeft < -100) { 
-                    obs.remove(); 
-                    obstacles.splice(index, 1); 
-                }
+                if (obsLeft < -100) { obs.remove(); obstacles.splice(index, 1); }
             });
             requestAnimationFrame(gameLoop);
         }
 
-        // --- סיום משחק ---
         function gameOver() {
-            playGameOverSound();
+            playSound('gameover');
             isGameOver = true;
             document.getElementById('game-over-modal').style.display = 'flex';
             updateLeaderboard();
         }
 
-        // --- אירועי קלט (קפיצה) ---
         function handleJump() { 
             if(isGameOver || isPaused) return; 
-            gameStarted = true; 
-            velocity = -6; 
-            playJumpSound();
+            gameStarted = true; velocity = -6; playSound('jump');
         }
 
         window.addEventListener('mousedown', handleJump);
         window.addEventListener('touchstart', handleJump);
 
-        // --- יצירת מכשולים ---
         setInterval(() => {
             if (gameStarted && !isGameOver && !isPaused) {
                 const obs = document.createElement('div');
@@ -444,14 +305,8 @@
             }
         }, 1200);
 
-        // התחלה
         gameLoop();
-        
-        // זיהוי מיקום בסיסי
-        fetch('https://ipapi.co/json/').then(r => r.json()).then(d => { 
-            document.getElementById('location').innerText = d.city + ", " + d.country_name; 
-        }).catch(() => {});
-
+        fetch('https://ipapi.co/json/').then(r => r.json()).then(d => { document.getElementById('location').innerText = d.city + ", " + d.country_name; }).catch(() => {});
     </script>
 </body>
 </html>
