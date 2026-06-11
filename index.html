@@ -94,7 +94,7 @@
         let announcementTimer; 
         const player = document.getElementById('player');
 
-        // פונקציית סאונד - מייצרת צליל לחיצה בקוד
+        // פונקציית סאונד קפיצה
         function playJumpSound() {
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -108,6 +108,24 @@
                 gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.1);
                 oscillator.start();
                 oscillator.stop(audioCtx.currentTime + 0.1);
+            } catch(e) {}
+        }
+
+        // פונקציית סאונד הפסד חדשה
+        function playGameOverSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                oscillator.type = 'sawtooth';
+                oscillator.frequency.setValueAtTime(400, audioCtx.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.5);
+                gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.5);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.5);
             } catch(e) {}
         }
 
@@ -244,6 +262,7 @@
         }
 
         function gameOver() {
+            playGameOverSound(); // מפעיל את הסאונד החדש
             isGameOver = true;
             document.getElementById('game-over-modal').style.display = 'flex';
             updateLeaderboard();
@@ -253,7 +272,7 @@
             if(isGameOver || isPaused) return; 
             gameStarted = true; 
             velocity = -6; 
-            playJumpSound(); // קריאה לצליל
+            playJumpSound(); // סאונד קפיצה
         }
 
         window.addEventListener('mousedown', handleJump);
