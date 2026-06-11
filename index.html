@@ -91,8 +91,25 @@
         let score = 0, y = 300, velocity = 0, gameStarted = false, isGameOver = false, gameSpeed = 5, isGodMode = false, isPaused = false;
         let lastReloadTime = null;
         let obstacles = [];
-        let announcementTimer; // משתנה לטיימר של ההודעה
+        let announcementTimer; 
         const player = document.getElementById('player');
+
+        // פונקציית סאונד - מייצרת צליל לחיצה בקוד
+        function playJumpSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                oscillator.type = 'square';
+                oscillator.frequency.value = 400;
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.1);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.1);
+            } catch(e) {}
+        }
 
         db.collection("system").doc("settings").onSnapshot((doc) => {
             if (!doc.exists) return;
@@ -111,12 +128,11 @@
                 bar.innerText = data.message;
                 bar.style.display = data.message.trim() ? 'flex' : 'none';
                 
-                // --- קוד חדש להעלמת ההודעה אחרי 10 שניות ---
                 if (data.message.trim() !== "") {
-                    clearTimeout(announcementTimer); // מנקה טיימר קודם אם היה
+                    clearTimeout(announcementTimer);
                     announcementTimer = setTimeout(() => {
                         bar.style.display = 'none';
-                    }, 10000); // 10,000 מילי-שניות = 10 שניות
+                    }, 10000); 
                 }
             }
         });
@@ -237,6 +253,7 @@
             if(isGameOver || isPaused) return; 
             gameStarted = true; 
             velocity = -6; 
+            playJumpSound(); // קריאה לצליל
         }
 
         window.addEventListener('mousedown', handleJump);
