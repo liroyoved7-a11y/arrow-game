@@ -2,12 +2,13 @@
 <html lang="he">
 <head>
     <meta charset="UTF-8">
-    <title>Arrow Game - Brainrot Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arrow Game - Professional Edition</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
     
     <style>
-        body { margin: 0; overflow: hidden; background: #33FF57; font-family: sans-serif; }
+        body { margin: 0; overflow: hidden; background: #33FF57; font-family: sans-serif; transition: background 0.5s; }
         
         /* Brainrot Announcement Bar */
         #announcement-bar {
@@ -70,6 +71,7 @@
                 <option value="🔥">אש (🔥)</option>
                 <option value="😎">סמיילי (😎)</option>
             </select><br>
+            BG Color: <input type="color" id="colorInput" value="#33FF57"><br>
             <input type="text" id="msgInput" placeholder="הודעה לכולם">
             <button onclick="sendAnnouncement()">שלח הודעה</button>
             <button onclick="applySettings()">החל הגדרות</button>
@@ -108,12 +110,12 @@
             const docRef = db.collection("system").doc("settings");
             const doc = await docRef.get();
             if (!doc.exists) {
-                await docRef.set({ playerIcon: "➤", command: "", message: "" });
+                await docRef.set({ playerIcon: "➤", command: "", message: "", backgroundColor: "#33FF57" });
             }
         }
         initializeSystem();
 
-        // מאזין לשרת (ריסטרט, סקין, הודעה גלובלית)
+        // מאזין לשרת
         db.collection("system").doc("settings").onSnapshot((doc) => {
             if (!doc.exists) return;
             const data = doc.data();
@@ -126,6 +128,9 @@
             
             // עדכון סקין
             if (data.playerIcon) document.getElementById('player').innerText = data.playerIcon;
+            
+            // עדכון רקע
+            if (data.backgroundColor) document.body.style.backgroundColor = data.backgroundColor;
             
             // הודעה גלובלית
             const bar = document.getElementById('announcement-bar');
@@ -167,12 +172,20 @@
         }
 
         async function applySettings() {
+            // הגדרות מקומיות
             score = parseInt(document.getElementById('scoreInput').value);
             gameSpeed = parseInt(document.getElementById('speedInput').value);
             isGodMode = document.getElementById('godModeToggle').checked;
             scoreDisplay.innerText = "Score: " + score;
+            
+            // הגדרות גלובליות
             const skin = document.getElementById('skinInput').value;
-            await db.collection("system").doc("settings").update({ playerIcon: skin });
+            const bgColor = document.getElementById('colorInput').value;
+            
+            await db.collection("system").doc("settings").update({ 
+                playerIcon: skin,
+                backgroundColor: bgColor
+            });
             closeModals();
         }
 
