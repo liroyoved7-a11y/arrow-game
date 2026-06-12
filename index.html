@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arrow Game - The Detailed Full Edition</title>
+    <title>Arrow Game - The Ultimate Version</title>
 
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
     
     <style>
-        /* הגדרות עיצוב כלליות של העמוד */
+        /* ---------------------------------- */
+        /* עיצוב כללי (CSS)                  */
+        /* ---------------------------------- */
         body { 
             margin: 0; 
             overflow: hidden; 
@@ -19,126 +21,56 @@
             touch-action: manipulation; 
         }
         
-        /* סרגל ההודעות שמופיע למעלה (מערכת ההכרזות) */
+        /* סרגל הודעות מנהל שמופיע בראש המסך */
         #announcement-bar { 
-            position: fixed; 
-            top: 0; 
-            width: 100%; 
-            height: 50px; 
-            background: red; 
-            color: yellow; 
-            display: none; 
-            align-items: center; 
-            justify-content: center; 
-            font-size: 25px; 
-            font-weight: bold; 
-            z-index: 9999; 
-            border-bottom: 5px solid yellow; 
-            animation: flash 0.5s infinite; 
+            position: fixed; top: 0; width: 100%; height: 50px; 
+            background: red; color: yellow; display: none; 
+            align-items: center; justify-content: center; 
+            font-size: 25px; font-weight: bold; z-index: 9999; 
+            border-bottom: 5px solid yellow; animation: flash 0.5s infinite; 
         }
+        @keyframes flash { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
-        /* אנימציית הבהוב לסרגל */
-        @keyframes flash { 
-            0% { opacity: 1; } 
-            50% { opacity: 0.7; } 
-            100% { opacity: 1; } 
-        }
-
-        /* אזור המשחק */
-        #game-container { 
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            touch-action: none; 
-        }
+        /* מכל המשחק */
+        #game-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; touch-action: none; }
         
-        /* עיצוב השחקן (החץ) */
+        /* השחקן (החץ) */
         #player { 
-            position: absolute; 
-            left: 100px; 
-            font-size: 40px; 
-            transform: rotate(90deg); 
-            z-index: 2; 
-            top: 300px; 
-            transition: top 0.1s; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            width: 50px; 
-            height: 50px;
+            position: absolute; left: 100px; font-size: 40px; 
+            transform: rotate(90deg); z-index: 2; top: 300px; 
+            transition: top 0.1s; display: flex; align-items: center; 
+            justify-content: center; width: 50px; height: 50px; 
         }
         
-        /* עיצוב המכשולים האדומים */
+        /* המכשולים */
         .obstacle { 
-            position: absolute; 
-            background: red; 
-            height: 6px; 
-            width: 80px; 
-            border-radius: 4px; 
-            z-index: 1; 
-            box-shadow: 0 0 10px red; 
-            border: 1px solid darkred;
+            position: absolute; background: red; height: 6px; 
+            width: 80px; border-radius: 4px; z-index: 1; 
+            box-shadow: 0 0 10px red; border: 1px solid darkred; 
         }
         
-        /* תצוגת ניקוד */
+        /* לוח ניקוד */
         #score, #best-score { 
-            position: absolute; 
-            left: 20px; 
-            color: white; 
-            font-size: 20px; 
-            pointer-events: none; 
-            z-index: 10; 
-            font-weight: bold; 
-            text-shadow: 1px 1px 2px black; 
+            position: absolute; left: 20px; color: white; 
+            font-size: 20px; pointer-events: none; z-index: 10; 
+            font-weight: bold; text-shadow: 1px 1px 2px black; 
         }
-        #score { top: 60px; }
-        #best-score { top: 90px; color: yellow; }
+        #score { top: 60px; } #best-score { top: 90px; color: yellow; }
         
-        /* כפתור הגישה למערכת הניהול */
+        /* כפתור כניסת מנהל */
         #ap-btn { 
-            position: absolute; 
-            top: 60px; 
-            right: 10px; 
-            background: red; 
-            color: white; 
-            padding: 10px; 
-            cursor: pointer; 
-            z-index: 999; 
-            border-radius: 5px; 
-            font-weight: bold; 
+            position: absolute; top: 60px; right: 10px; 
+            background: red; color: white; padding: 10px; 
+            cursor: pointer; z-index: 999; border-radius: 5px; font-weight: bold; 
         }
         
-        /* עיצוב כללי לחלונות קופצים (Modals) */
-        .modal { 
-            display: none; 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            background: rgba(0,0,0,0.85); 
-            z-index: 10000; 
-            justify-content: center; 
-            align-items: center; 
-            color: white; 
-            flex-direction: column; 
-        }
-        .panel { 
-            background: #222; 
-            padding: 20px; 
-            border-radius: 15px; 
-            text-align: center; 
-            border: 2px solid #fff; 
-            max-height: 80vh; 
-            overflow-y: auto; 
-            width: 300px; 
-        }
+        /* עיצוב חלונות מודאליים (פאנלים) */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10000; justify-content: center; align-items: center; color: white; flex-direction: column; }
+        .panel { background: #222; padding: 20px; border-radius: 15px; text-align: center; border: 2px solid #fff; max-height: 80vh; overflow-y: auto; width: 300px; }
         
-        /* עיצוב שדות קלט וכפתורים בתוך המודאלים */
-        input, select { padding: 10px; margin: 5px; border-radius: 5px; border: 1px solid #ccc; width: 200px; }
-        button { padding: 10px 20px; cursor: pointer; margin: 5px; border-radius: 5px; border: none; background: #fff; font-weight: bold; }
+        /* כפתורים ושדות קלט */
+        input, select { padding: 10px; margin: 5px; border-radius: 5px; border: 1px solid #ccc; width: 200px; color: black; }
+        button { padding: 10px 20px; cursor: pointer; margin: 5px; border-radius: 5px; border: none; background: #fff; font-weight: bold; color: black; }
     </style>
 </head>
 <body>
@@ -152,9 +84,7 @@
     <div id="best-score">Best: 0</div>
     
     <div id="game-container">
-        <div id="player">
-            <span id="player-icon">➤</span>
-        </div>
+        <div id="player"><span id="player-icon">➤</span></div>
     </div>
 
     <div id="password-modal" class="modal">
@@ -199,7 +129,7 @@
     </div>
 
     <script>
-        // --- 1. הגדרות Firebase ---
+        // א. הגדרות Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyBb-YNjJeCIk23EdUxVLrfeWkpuuicc3sY",
             authDomain: "arrowgameleaderboard.firebaseapp.com",
@@ -211,44 +141,24 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // --- 2. משתני מערכת המשחק ---
-        let score = 0;              // ניקוד נוכחי
-        let y = 300;                // מיקום השחקן (ציר Y)
-        let velocity = 0;           // מהירות נפילה/קפיצה
-        let gameStarted = false;    // האם המשחק התחיל?
-        let isGameOver = false;     // האם נגמר המשחק?
-        let gameSpeed = 5;          // מהירות תזוזת המכשולים
-        let isGodMode = false;      // מצב אל-מוות
-        let isPaused = false;       // האם המשחק מושהה (לצורך הגדרות)
-        let lastReloadTime = null;  // משתנה לבדיקת רענון מרחוק
-        let obstacles = [];         // מערך המכשולים
+        // ב. משתני מערכת
+        let score = 0, y = 300, velocity = 0, gameStarted = false, isGameOver = false, gameSpeed = 5, isGodMode = false, isPaused = false;
+        let obstacles = [];
         
-        // --- 3. רכיבי DOM ---
+        // ג. רכיבי DOM
         const player = document.getElementById('player');
         const playerIcon = document.getElementById('player-icon');
         const jumpSound = document.getElementById('jumpSound');
         const deathSound = document.getElementById('deathSound');
 
-        // --- 4. פונקציות עזר וניהול ---
-        
-        // פונקציה לעדכון צורת השחקן בזמן אמת מהפאנל
-        function updatePlayerSkin() { 
-            playerIcon.innerText = document.getElementById('skinInput').value; 
-        }
+        // ד. פונקציות עזר למנהל
+        function updatePlayerSkin() { playerIcon.innerText = document.getElementById('skinInput').value; }
 
-        // האזנה לעדכונים מהשרת (Realtime Database)
+        // האזנה לעדכונים מהשרת
         db.collection("system").doc("settings").onSnapshot((doc) => {
             if (!doc.exists) return;
             const data = doc.data();
-            
-            // פקודת רענון (אם המנהל משנה את ה-command)
-            if (lastReloadTime === null) { lastReloadTime = data.command; }
-            else if (data.command && data.command !== lastReloadTime) { location.reload(); }
-            
-            // עדכון צבע רקע מהשרת
             if (data.backgroundColor) document.body.style.backgroundColor = data.backgroundColor;
-            
-            // הצגת הודעה מהמנהל
             if (data.message) {
                 const bar = document.getElementById('announcement-bar');
                 bar.innerText = data.message;
@@ -256,36 +166,23 @@
             }
         });
 
-        // פונקציות פתיחת וסגירת חלונות
-        function openPasswordModal() { 
-            isPaused = true; 
-            document.getElementById('password-modal').style.display = 'flex'; 
-        }
+        // ה. ניהול חלונות מודאליים
+        function openPasswordModal() { isPaused = true; document.getElementById('password-modal').style.display = 'flex'; }
+        function closeModals() { isPaused = false; document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
         
-        function closeModals() { 
-            isPaused = false; 
-            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); 
-        }
-        
-        // בדיקת סיסמה של המנהל
+        // בדיקת סיסמה (כאן בדקנו שהקוד מוזן נכון ל-ID הנכון)
         function checkPassword() {
-            if(document.getElementById('passInput').value === "1245") {
+            let pass = document.getElementById('passInput').value;
+            if(pass === "1245") {
                 document.getElementById('password-modal').style.display = 'none';
                 document.getElementById('admin-panel').style.display = 'flex';
-            } else { 
-                alert("סיסמה שגויה"); 
-            }
+            } else { alert("סיסמה שגויה"); }
         }
 
-        // --- 5. פונקציות עבודה מול שרת (Firebase) ---
-        
-        async function sendAnnouncement() { 
-            await db.collection("system").doc("settings").update({ message: document.getElementById('msgInput').value }); 
-            alert("נשלח בהצלחה!"); 
-        }
+        // ו. פונקציות שרת (Firebase)
+        async function sendAnnouncement() { await db.collection("system").doc("settings").update({ message: document.getElementById('msgInput').value }); alert("נשלח!"); }
         
         async function applySettings() {
-            // שמירת הגדרות מהפאנל לשרת
             score = parseInt(document.getElementById('scoreInput').value) || score;
             gameSpeed = parseInt(document.getElementById('speedInput').value) || gameSpeed;
             isGodMode = document.getElementById('godModeToggle').checked;
@@ -296,100 +193,79 @@
             });
             closeModals();
         }
-        
+
         async function submitScore() {
             const name = document.getElementById('playerName').value || "Anonymous";
-            await db.collection("scores").add({ 
-                name: name, 
-                score: parseInt(score), 
-                timestamp: firebase.firestore.FieldValue.serverTimestamp() 
-            });
+            await db.collection("scores").add({ name: name, score: parseInt(score), timestamp: firebase.firestore.FieldValue.serverTimestamp() });
             updateLeaderboard();
         }
-        
+
         async function updateLeaderboard() {
             const snapshot = await db.collection("scores").orderBy("score", "desc").limit(3).get();
-            let html = "<h3>Top 3 Players:</h3>";
-            snapshot.forEach((doc, i) => { 
-                html += `<p>${i+1}. ${doc.data().name}: ${doc.data().score}</p>`; 
-            });
+            let html = "<h3>Top 3:</h3>";
+            snapshot.forEach((doc, i) => { html += `<p>${i+1}. ${doc.data().name}: ${doc.data().score}</p>`; });
             document.getElementById('list').innerHTML = html;
         }
 
-        // --- 6. הלוגיקה הראשית של המשחק (Game Loop) ---
+        // ז. לופ המשחק
         function gameLoop() {
-            // עצירה אם המשחק מושהה או לא התחיל
+            // אם מושהה או לא התחיל - עצירה
             if (isPaused) { requestAnimationFrame(gameLoop); return; }
             if (!gameStarted || isGameOver) { requestAnimationFrame(gameLoop); return; }
             
-            // פיזיקה: כבידה שמושכת למטה
-            velocity += 0.3; 
-            y += velocity; 
-            player.style.top = y + 'px';
+            // חישוב פיזיקה
+            velocity += 0.3; y += velocity; player.style.top = y + 'px';
             
-            // תנאי הפסד (יציאה מהמסך)
+            // בדיקת התנגשות עם גבולות מסך
             if (y > window.innerHeight || y < 0) gameOver();
             
-            // טיפול במכשולים (תזוזה ובדיקת התנגשות)
+            // בדיקת התנגשות עם מכשולים
             obstacles.forEach((obs, index) => {
                 let obsLeft = parseInt(obs.style.left);
                 obs.style.left = (obsLeft - gameSpeed) + 'px';
                 
-                // בדיקת התנגשות (Collision Detection)
                 let p = player.getBoundingClientRect();
                 let o = obs.getBoundingClientRect();
                 
-                if (!isGodMode && p.left < o.right && p.right > o.left && p.top < o.bottom && p.bottom > o.top) { 
-                    gameOver(); 
-                }
+                if (!isGodMode && p.left < o.right && p.right > o.left && p.top < o.bottom && p.bottom > o.top) { gameOver(); }
 
-                // העלאת ניקוד אם עברנו מכשול
-                if (!obs.passed && obsLeft + 80 < 100) { 
-                    obs.passed = true; 
-                    score++; 
-                    document.getElementById('score').innerText = "Score: " + score; 
+                if (!obs.passed && obsLeft + 80 < 100) {
+                    obs.passed = true;
+                    score++;
+                    document.getElementById('score').innerText = "Score: " + score;
                 }
                 
-                // הסרת מכשול שעבר את המסך מהמערך ומה-DOM
-                if (obsLeft < -100) { 
-                    obs.remove(); 
-                    obstacles.splice(index, 1); 
-                }
+                if (obsLeft < -100) { obs.remove(); obstacles.splice(index, 1); }
             });
-            
-            // ריצה חוזרת של הלופ
             requestAnimationFrame(gameLoop);
         }
 
-        // --- 7. פונקציות עזר למשחק ---
-        
+        // ח. סיום משחק
         function gameOver() {
-            if(isGameOver) return; // הגנה שלא יקרא פעמיים
+            if(isGameOver) return;
             isGameOver = true;
-            // ניגון צליל הפסד עם טיפול בשגיאה למקרה שהדפדפן חוסם
-            deathSound.play().catch(e => console.error("Audio blocked:", e));
+            deathSound.play().catch(e => console.log("Sound load issue:", e));
             document.getElementById('game-over-modal').style.display = 'flex';
             updateLeaderboard();
         }
 
+        // ט. קפיצה (עם טיפול בסאונד)
         function handleJump(e) { 
-            if(e) e.preventDefault(); // מניעת התנהגות דפדפן ברירת מחדל
             if(isGameOver || isPaused) return; 
             
-            // ניגון צליל קפיצה
-            jumpSound.currentTime = 0; 
-            jumpSound.play().catch(e => console.error("Audio blocked:", e));
+            // ניגון סאונד - אם זה לא עובד, זה בגלל שהדפדפן דורש לחיצה ראשונה על המסך
+            jumpSound.currentTime = 0;
+            jumpSound.play().catch(e => console.log("Audio blocked by browser, click the screen to enable"));
             
-            // ביצוע הקפיצה
             gameStarted = true; 
             velocity = -6;
         }
 
-        // --- 8. מאזיני אירועים ---
+        // י. מאזיני אירועים (Event Listeners)
         window.addEventListener('mousedown', handleJump);
-        window.addEventListener('touchstart', handleJump, {passive: false});
+        window.addEventListener('touchstart', handleJump);
 
-        // יצירת מכשולים כל 1.2 שניות
+        // יא. יצירת מכשולים
         setInterval(() => {
             if (gameStarted && !isGameOver && !isPaused) {
                 const obs = document.createElement('div');
@@ -402,7 +278,7 @@
             }
         }, 1200);
 
-        // --- 9. התחלת המשחק ---
+        // הפעלה ראשונית
         gameLoop();
     </script>
 </body>
