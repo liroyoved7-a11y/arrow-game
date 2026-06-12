@@ -3,15 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arrow Game - The Big Version</title>
+    <title>Arrow Game - Full Original Version</title>
 
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
     
     <style>
-        /* ----------------------------------------------------- */
-        /* עיצוב גלובלי של כל המשחק                            */
-        /* ----------------------------------------------------- */
+        /* עיצוב גלובלי */
         body { 
             margin: 0; 
             overflow: hidden; 
@@ -21,7 +19,7 @@
             touch-action: manipulation; 
         }
         
-        /* סרגל הודעות מנהל שיופיע למעלה */
+        /* סרגל הודעות של המנהל */
         #announcement-bar { 
             position: fixed; 
             top: 0; 
@@ -71,7 +69,7 @@
             height: 50px; 
         }
         
-        /* מכשולים אדומים */
+        /* עיצוב המכשולים */
         .obstacle { 
             position: absolute; 
             background: red; 
@@ -98,7 +96,7 @@
         #score { top: 60px; } 
         #best-score { top: 90px; color: yellow; }
         
-        /* כפתור כניסת מנהל */
+        /* כפתור אדמין */
         #ap-btn { 
             position: absolute; 
             top: 60px; 
@@ -112,7 +110,7 @@
             font-weight: bold; 
         }
         
-        /* חלונות קופצים (Modals) */
+        /* חלונות קופצים */
         .modal { 
             display: none; 
             position: fixed; 
@@ -139,7 +137,6 @@
             width: 300px; 
         }
         
-        /* כפתורים ושדות קלט */
         input, select { 
             padding: 10px; 
             margin: 5px; 
@@ -227,11 +224,10 @@
             messagingSenderId: "486658082903",
             appId: "1:486658082903:web:d6f86af4c5aba6a78ffb12"
         };
-
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // משתני המשחק
+        // משתני מערכת
         let score = 0;
         let y = 300;
         let velocity = 0;
@@ -247,12 +243,12 @@
         const jumpSound = document.getElementById('jumpSound');
         const deathSound = document.getElementById('deathSound');
 
-        // פונקציה לעדכון ה-Skin של השחקן
+        // פונקציית עדכון Skin
         function updatePlayerSkin() { 
             playerIcon.innerText = document.getElementById('skinInput').value; 
         }
 
-        // האזנה לעדכונים מהשרת (Firebase)
+        // האזנה לעדכונים בזמן אמת
         db.collection("system").doc("settings").onSnapshot((doc) => {
             if (!doc.exists) return;
             const data = doc.data();
@@ -264,31 +260,30 @@
             }
         });
 
-        // פונקציית איפוס ניקוד (Kick All)
+        // איפוס ניקוד - Kick All
         async function resetLeaderboard() {
             if(!confirm("אתה בטוח שאתה רוצה למחוק את כל הטבלה?")) return;
             const snapshot = await db.collection("scores").get();
             const batch = db.batch();
             snapshot.docs.forEach(doc => batch.delete(doc.ref));
             await batch.commit();
-            alert("הניקוד אופס בהצלחה!");
+            alert("הניקוד אופס!");
         }
 
-        // פתיחה וסגירה של חלונות
+        // פתיחה וסגירה של מודלים
         function openPasswordModal() { 
             isPaused = true; 
             document.getElementById('password-modal').style.display = 'flex'; 
         }
-
+        
         function closeModals() { 
             isPaused = false; 
             document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); 
         }
         
-        // בדיקת סיסמה של המנהל
+        // כניסת מנהל
         function checkPassword() {
-            let pass = document.getElementById('passInput').value;
-            if(pass === "1245") {
+            if(document.getElementById('passInput').value === "1245") {
                 document.getElementById('password-modal').style.display = 'none';
                 document.getElementById('admin-panel').style.display = 'flex';
             } else { 
@@ -296,13 +291,13 @@
             }
         }
 
-        // שליחת הודעה מנהל
+        // הודעה למשתמשים
         async function sendAnnouncement() { 
             await db.collection("system").doc("settings").update({ message: document.getElementById('msgInput').value }); 
-            alert("הודעה נשלחה!"); 
+            alert("נשלח!"); 
         }
         
-        // שמירת הגדרות מהפאנל
+        // החלת הגדרות
         async function applySettings() {
             score = parseInt(document.getElementById('scoreInput').value) || score;
             gameSpeed = parseInt(document.getElementById('speedInput').value) || gameSpeed;
@@ -315,7 +310,7 @@
             closeModals();
         }
 
-        // שליחת ניקוד לשרת
+        // שליחת ניקוד
         async function submitScore() {
             const name = document.getElementById('playerName').value || "Anonymous";
             await db.collection("scores").add({ 
@@ -326,7 +321,7 @@
             updateLeaderboard();
         }
 
-        // עדכון טבלת מובילים
+        // עדכון טבלה
         async function updateLeaderboard() {
             const snapshot = await db.collection("scores").orderBy("score", "desc").limit(3).get();
             let html = "<h3>Top 3:</h3>";
@@ -336,7 +331,7 @@
             document.getElementById('list').innerHTML = html;
         }
 
-        // לופ המשחק העיקרי
+        // לופ משחק
         function gameLoop() {
             if (isPaused) { 
                 requestAnimationFrame(gameLoop); 
@@ -351,8 +346,8 @@
             y += velocity; 
             player.style.top = y + 'px';
             
-            if (y > window.innerHeight || y < 0) {
-                gameOver();
+            if (y > window.innerHeight || y < 0) { 
+                gameOver(); 
             }
             
             obstacles.forEach((obs, index) => {
@@ -365,11 +360,11 @@
                 if (!isGodMode && p.left < o.right && p.right > o.left && p.top < o.bottom && p.bottom > o.top) { 
                     gameOver(); 
                 }
-
-                if (!obs.passed && obsLeft + 80 < 100) {
-                    obs.passed = true;
-                    score++;
-                    document.getElementById('score').innerText = "Score: " + score;
+                
+                if (!obs.passed && obsLeft + 80 < 100) { 
+                    obs.passed = true; 
+                    score++; 
+                    document.getElementById('score').innerText = "Score: " + score; 
                 }
                 
                 if (obsLeft < -100) { 
@@ -377,6 +372,7 @@
                     obstacles.splice(index, 1); 
                 }
             });
+            
             requestAnimationFrame(gameLoop);
         }
 
@@ -400,7 +396,6 @@
             velocity = -6;
         }
 
-        // מאזיני לחיצה
         window.addEventListener('mousedown', handleJump);
         window.addEventListener('touchstart', handleJump);
 
@@ -417,7 +412,6 @@
             }
         }, 1200);
 
-        // הפעלת הלופ
         gameLoop();
     </script>
 </body>
