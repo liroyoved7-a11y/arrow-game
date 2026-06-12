@@ -3,162 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arrow Game - Full Complete Version</title>
+    <title>Ultimate Monkey Game - Complete Edition</title>
 
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
     
     <style>
-        /* עיצוב בסיסי */
-        body { 
-            margin: 0; 
-            overflow: hidden; 
-            background: #33FF57; 
-            font-family: Arial, sans-serif; 
-            transition: background 0.5s ease; 
-            touch-action: manipulation; 
-        }
-
-        /* סרגל הודעות המנהל */
+        body { margin: 0; overflow: hidden; background: #33FF57; font-family: sans-serif; transition: background 1s ease; }
+        
         #announcement-bar { 
-            position: fixed; 
-            top: 0; 
-            width: 100%; 
-            height: 50px; 
-            background: red; 
-            color: yellow; 
-            display: none; 
-            align-items: center; 
-            justify-content: center; 
-            font-size: 25px; 
-            font-weight: bold; 
-            z-index: 9999; 
-            border-bottom: 5px solid yellow; 
+            position: fixed; top: 0; width: 100%; height: 50px; background: red; color: yellow; 
+            display: none; align-items: center; justify-content: center; font-size: 25px; 
+            font-weight: bold; z-index: 9999; border-bottom: 5px solid yellow; animation: flash 0.5s infinite; 
         }
+        @keyframes flash { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
 
-        /* אזור המשחק */
-        #game-container { 
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            touch-action: none; 
-        }
-
-        /* השחקן */
+        #game-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; touch-action: none; }
+        
         #player { 
-            position: absolute; 
-            left: 100px; 
-            font-size: 40px; 
-            transform: rotate(90deg); 
-            z-index: 2; 
-            top: 300px; 
-            transition: top 0.1s; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            width: 50px; 
-            height: 50px; 
+            position: absolute; left: 100px; font-size: 50px; transform: rotate(90deg); 
+            z-index: 2; top: 300px; transition: top 0.1s; display: flex; align-items: center; justify-content: center;
+            width: 50px; height: 50px;
         }
-
-        /* מכשולים */
-        .obstacle { 
-            position: absolute; 
-            background: red; 
+        
+        /* האביזר: קו אלכסוני מהאוזן ליד */
+        #monkey-accessory { 
+            position: absolute;
+            top: 15px; 
+            left: 12px;
+            width: 25px; 
             height: 6px; 
-            width: 80px; 
-            border-radius: 4px; 
-            z-index: 1; 
-            border: 1px solid darkred; 
-        }
-
-        /* ניקוד */
-        #score { 
-            position: absolute; 
-            left: 20px; 
-            top: 60px; 
-            color: white; 
-            font-size: 20px; 
-            font-weight: bold; 
-            z-index: 10; 
-            text-shadow: 1px 1px 2px black; 
-        }
-
-        /* כפתור אדמין */
-        #ap-btn { 
-            position: absolute; 
-            top: 60px; 
-            right: 10px; 
-            background: red; 
-            color: white; 
-            padding: 10px; 
-            cursor: pointer; 
-            z-index: 999; 
-            border-radius: 5px; 
-            font-weight: bold; 
-        }
-
-        /* מודלים (חלונות קופצים) */
-        .modal { 
+            background: yellow; 
+            border-radius: 3px; 
             display: none; 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            background: rgba(0,0,0,0.85); 
-            z-index: 10000; 
-            justify-content: center; 
-            align-items: center; 
-            color: white; 
-            flex-direction: column; 
+            box-shadow: 0 0 5px orange; 
+            z-index: 3;
+            transform: rotate(45deg);
         }
-
+        
+        .obstacle { 
+            position: absolute; background: red; height: 6px; width: 80px; 
+            border-radius: 4px; z-index: 1; box-shadow: 0 0 10px red; border: 1px solid darkred;
+        }
+        
+        #score, #best-score, #location { 
+            position: absolute; left: 20px; color: white; font-size: 20px; 
+            pointer-events: none; z-index: 10; font-weight: bold; text-shadow: 1px 1px 2px black; 
+        }
+        #score { top: 60px; }
+        #best-score { top: 90px; color: yellow; }
+        #location { top: 120px; font-size: 15px; font-style: italic; }
+        
+        #ap-btn { 
+            position: absolute; top: 60px; right: 10px; background: red; color: white; 
+            padding: 10px; cursor: pointer; z-index: 999; border-radius: 5px; font-weight: bold; 
+        }
+        
+        .modal { 
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.85); z-index: 10000; justify-content: center; 
+            align-items: center; color: white; flex-direction: column; 
+        }
         .panel { 
-            background: #222; 
-            padding: 20px; 
-            border-radius: 15px; 
-            text-align: center; 
-            border: 2px solid #fff; 
-            width: 300px; 
-            max-height: 80vh; 
-            overflow-y: auto; 
+            background: #222; padding: 20px; border-radius: 15px; text-align: center; 
+            border: 2px solid #fff; max-height: 80vh; overflow-y: auto; width: 300px; 
         }
-
-        /* טפסים */
-        input, select { 
-            padding: 10px; 
-            margin: 5px; 
-            border-radius: 5px; 
-            border: 1px solid #ccc; 
-            width: 200px; 
-            color: black; 
-        }
-
-        button { 
-            padding: 10px 20px; 
-            cursor: pointer; 
-            margin: 5px; 
-            border-radius: 5px; 
-            border: none; 
-            background: #fff; 
-            font-weight: bold; 
-            color: black; 
-        }
+        input, select { padding: 10px; margin: 5px; border-radius: 5px; border: 1px solid #ccc; width: 200px; }
+        button { padding: 10px 20px; cursor: pointer; margin: 5px; border-radius: 5px; border: none; background: #fff; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <audio id="jumpSound" src="https://actions.google.com/sounds/v1/ui/click.ogg" preload="auto"></audio>
-    <audio id="deathSound" src="https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg" preload="auto"></audio>
+    <audio id="bg-music" loop>
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+    </audio>
 
     <div id="announcement-bar"></div>
     <div id="ap-btn" onclick="openPasswordModal()">ADMIN</div>
     <div id="score">Score: 0</div>
+    <div id="best-score">Best: 0</div>
+    <div id="location">Loading...</div>
     
     <div id="game-container">
-        <div id="player"><span id="player-icon">➤</span></div>
+        <div id="player">
+            <div id="monkey-accessory"></div>
+            <span id="player-icon">🐒</span>
+        </div>
     </div>
 
     <div id="password-modal" class="modal">
@@ -178,17 +108,18 @@
             Speed: <input type="number" id="speedInput"><br>
             <label><input type="checkbox" id="godModeToggle"> God Mode</label><br>
             Skin: 
-            <select id="skinInput">
+            <select id="skinInput" onchange="updatePlayerSkin()">
                 <option value="➤">➤</option>
                 <option value="🚀">🚀</option>
                 <option value="🔥">🔥</option>
                 <option value="😎">😎</option>
+                <option value="🐒">🐒</option>
             </select><br>
             BG Color: <input type="color" id="colorInput" value="#33FF57"><br>
             <input type="text" id="msgInput" placeholder="הודעה לכולם"><br>
             <button onclick="sendAnnouncement()">שלח הודעה</button><br>
-            <button onclick="triggerGlobalReload()" style="background-color: orange;">ריענון לכולם (Reload All)</button><br>
-            <button onclick="applySettings()">שמור הכל (לכולם)</button>
+            <button onclick="applySettings()">שמור הכל</button>
+            <button onclick="kickAllPlayers()" style="background: red; color: white;">Kick All</button>
             <button onclick="closeModals()">סגור</button>
         </div>
     </div>
@@ -196,15 +127,14 @@
     <div id="game-over-modal" class="modal">
         <div class="panel">
             <h1>GAME OVER!</h1>
-            <input type="text" id="playerName" placeholder="הכנס שם...">
-            <button onclick="submitScore()">שמור ניקוד</button>
+            <input type="text" id="playerName" placeholder="שם...">
+            <button onclick="submitScore()">שמור</button>
             <div id="list"></div>
             <button onclick="location.reload()">שחק שוב</button>
         </div>
     </div>
 
     <script>
-        // קונפיגורציית Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyBb-YNjJeCIk23EdUxVLrfeWkpuuicc3sY",
             authDomain: "arrowgameleaderboard.firebaseapp.com",
@@ -213,136 +143,89 @@
             messagingSenderId: "486658082903",
             appId: "1:486658082903:web:d6f86af4c5aba6a78ffb12"
         };
-        
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // משתני מערכת
-        let score = 0;
-        let y = 300;
-        let velocity = 0;
-        let gameStarted = false;
-        let isGameOver = false;
-        let gameSpeed = 5;
-        let isGodMode = false;
-        let isPaused = false;
+        let score = 0, y = 300, velocity = 0, gameStarted = false, isGameOver = false, gameSpeed = 5, isGodMode = false, isPaused = false;
+        let lastReloadTime = null;
         let obstacles = [];
-        let msgTimer;
-
+        let announcementTimer; 
         const player = document.getElementById('player');
         const playerIcon = document.getElementById('player-icon');
-        const jumpSound = document.getElementById('jumpSound');
-        const deathSound = document.getElementById('deathSound');
+        const accessory = document.getElementById('monkey-accessory');
+        const music = document.getElementById('bg-music');
 
-        // האזנה לעדכונים מ-Firebase (סנכרון לכולם)
+        function updatePlayerSkin() {
+            const skin = document.getElementById('skinInput').value;
+            playerIcon.innerText = skin;
+            accessory.style.display = (skin === '🐒') ? 'block' : 'none';
+        }
+
         db.collection("system").doc("settings").onSnapshot((doc) => {
             if (!doc.exists) return;
             const data = doc.data();
+            if (lastReloadTime === null) { lastReloadTime = data.command; }
+            else if (data.command && data.command !== lastReloadTime) { location.reload(); }
             
-            // פקודת ריענון גלובלי
-            if (data.reload === true) {
-                db.collection("system").doc("settings").update({ reload: false });
-                location.reload();
+            if (data.playerIcon) {
+                playerIcon.innerText = data.playerIcon;
+                accessory.style.display = (data.playerIcon === '🐒') ? 'block' : 'none';
             }
-            
-            // עדכונים חזותיים ומשחקיים
-            if (data.backgroundColor !== undefined) document.body.style.backgroundColor = data.backgroundColor;
-            
-            // הודעה עם טיימר 10 שניות
-            if (data.message !== undefined) { 
-                const bar = document.getElementById('announcement-bar'); 
-                bar.innerText = data.message; 
-                bar.style.display = 'flex'; 
-                
-                clearTimeout(msgTimer); 
-                msgTimer = setTimeout(() => {
-                    bar.style.display = 'none';
-                }, 10000); 
+            if (data.backgroundColor) document.body.style.backgroundColor = data.backgroundColor;
+            if (data.message) {
+                const bar = document.getElementById('announcement-bar');
+                bar.innerText = data.message;
+                bar.style.display = data.message.trim() ? 'flex' : 'none';
+                clearTimeout(announcementTimer);
+                if (data.message.trim() !== "") announcementTimer = setTimeout(() => { bar.style.display = 'none'; }, 10000);
             }
-            
-            if (data.playerIcon !== undefined) playerIcon.innerText = data.playerIcon;
-            if (data.gameSpeed !== undefined) gameSpeed = data.gameSpeed;
-            if (data.isGodMode !== undefined) isGodMode = data.isGodMode;
-            if (data.score !== undefined) { score = data.score; document.getElementById('score').innerText = "Score: " + score; }
         });
 
-        // פונקציות ניהול
-        async function triggerGlobalReload() { 
-            if(!confirm("האם לרענן את המשחק לכל השחקנים?")) return;
-            await db.collection("system").doc("settings").update({ reload: true }); 
-        }
-
-        async function sendAnnouncement() { 
-            await db.collection("system").doc("settings").update({ message: document.getElementById('msgInput').value }); 
-            alert("הודעה נשלחה!"); 
-        }
-        
-        async function applySettings() {
-            await db.collection("system").doc("settings").update({ 
-                score: parseInt(document.getElementById('scoreInput').value),
-                gameSpeed: parseInt(document.getElementById('speedInput').value),
-                isGodMode: document.getElementById('godModeToggle').checked,
-                playerIcon: document.getElementById('skinInput').value, 
-                backgroundColor: document.getElementById('colorInput').value 
-            });
-            closeModals();
-        }
-
-        // ניהול מודאלים
-        function openPasswordModal() { 
-            isPaused = true; 
-            document.getElementById('password-modal').style.display = 'flex'; 
-        }
-
-        function closeModals() { 
-            isPaused = false; 
-            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); 
-        }
-        
+        function openPasswordModal() { isPaused = true; document.getElementById('password-modal').style.display = 'flex'; }
+        function closeModals() { isPaused = false; document.querySelectorAll('.modal').forEach(m => m.style.display = 'none'); }
         function checkPassword() {
             if(document.getElementById('passInput').value === "1245") {
                 document.getElementById('password-modal').style.display = 'none';
                 document.getElementById('admin-panel').style.display = 'flex';
-            } else { 
-                alert("סיסמה שגויה"); 
-            }
+            } else { alert("סיסמה שגויה"); }
         }
 
-        // ניקוד
+        async function sendAnnouncement() { await db.collection("system").doc("settings").update({ message: document.getElementById('msgInput').value }); alert("נשלח!"); }
+        async function kickAllPlayers() { await db.collection("system").doc("settings").update({ command: Date.now() }); }
+        
+        async function applySettings() {
+            score = parseInt(document.getElementById('scoreInput').value) || score;
+            gameSpeed = parseInt(document.getElementById('speedInput').value) || gameSpeed;
+            isGodMode = document.getElementById('godModeToggle').checked;
+            await db.collection("system").doc("settings").update({ 
+                playerIcon: document.getElementById('skinInput').value,
+                backgroundColor: document.getElementById('colorInput').value
+            });
+            closeModals();
+        }
+
         async function submitScore() {
             const name = document.getElementById('playerName').value || "Anonymous";
-            await db.collection("scores").add({ 
-                name: name, 
-                score: parseInt(score), 
-                timestamp: firebase.firestore.FieldValue.serverTimestamp() 
-            });
+            await db.collection("scores").add({ name: name, score: parseInt(score), timestamp: firebase.firestore.FieldValue.serverTimestamp() });
             updateLeaderboard();
+            alert("נשמר!");
         }
 
         async function updateLeaderboard() {
             const snapshot = await db.collection("scores").orderBy("score", "desc").limit(3).get();
             let html = "<h3>Top 3:</h3>";
-            snapshot.forEach((doc, i) => { 
-                html += `<p>${i+1}. ${doc.data().name}: ${doc.data().score}</p>`; 
-            });
+            snapshot.forEach((doc, i) => { html += `<p>${i+1}. ${doc.data().name}: ${doc.data().score}</p>`; });
             document.getElementById('list').innerHTML = html;
         }
 
-        // לופ המשחק
         function gameLoop() {
-            if (isPaused || !gameStarted || isGameOver) { 
-                requestAnimationFrame(gameLoop); 
-                return; 
-            }
-
-            velocity += 0.3; 
-            y += velocity; 
-            player.style.top = y + 'px';
-
-            if (y > window.innerHeight || y < 0) { 
-                gameOver(); 
-            }
-
+            if (isPaused) { requestAnimationFrame(gameLoop); return; }
+            if (!gameStarted || isGameOver) { requestAnimationFrame(gameLoop); return; }
+            
+            velocity += 0.3; y += velocity; player.style.top = y + 'px';
+            
+            if (y > window.innerHeight || y < 0) gameOver();
+            
             obstacles.forEach((obs, index) => {
                 let obsLeft = parseInt(obs.style.left);
                 obs.style.left = (obsLeft - gameSpeed) + 'px';
@@ -350,39 +233,33 @@
                 let p = player.getBoundingClientRect();
                 let o = obs.getBoundingClientRect();
                 
-                if (!isGodMode && p.left < o.right && p.right > o.left && p.top < o.bottom && p.bottom > o.top) { 
-                    gameOver(); 
-                }
+                if (!isGodMode && p.left < o.right && p.right > o.left && p.top < o.bottom && p.bottom > o.top) { gameOver(); }
 
-                if (!obs.passed && obsLeft + 80 < 100) { 
-                    obs.passed = true; 
-                    score++; 
-                    document.getElementById('score').innerText = "Score: " + score; 
+                if (!obs.passed && obsLeft + 80 < 100) {
+                    obs.passed = true;
+                    score++;
+                    document.getElementById('score').innerText = "Score: " + score;
                 }
-
-                if (obsLeft < -100) { 
-                    obs.remove(); 
-                    obstacles.splice(index, 1); 
-                }
+                
+                if (obsLeft < -100) { obs.remove(); obstacles.splice(index, 1); }
             });
-
             requestAnimationFrame(gameLoop);
         }
 
         function gameOver() {
-            if(isGameOver) return;
             isGameOver = true;
-            deathSound.play().catch(e => console.log(e));
             document.getElementById('game-over-modal').style.display = 'flex';
             updateLeaderboard();
         }
 
-        function handleJump(e) { 
+        function handleJump() { 
             if(isGameOver || isPaused) return; 
-            jumpSound.currentTime = 0; 
-            jumpSound.play().catch(e => console.log("Sound locked"));
-            gameStarted = true; 
-            velocity = -6; 
+            
+            if(!gameStarted) {
+                music.play().catch(e => console.log("Music blocked"));
+            }
+            
+            gameStarted = true; velocity = -6;
         }
 
         window.addEventListener('mousedown', handleJump);
