@@ -250,10 +250,22 @@
 
         // --- ניקוד וטבלה ---
         async function submitScore() {
-            const name = document.getElementById('playerName').value || "Anonymous";
-            await db.collection("scores").add({ name: name, score: parseInt(score), timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-            updateLeaderboard();
-            alert("נשמר!");
+            const nameInput = document.getElementById('playerName');
+            const name = nameInput.value.trim();
+
+            if (name === "") {
+                alert("שים שם");
+                return;
+            }
+
+            await db.collection("scores").add({ 
+                name: name, 
+                score: parseInt(score), 
+                timestamp: firebase.firestore.FieldValue.serverTimestamp() 
+            });
+            
+            // אחרי השמירה - רענון דף מיידי כדי להתחיל משחק חדש
+            location.reload();
         }
 
         async function updateLeaderboard() {
